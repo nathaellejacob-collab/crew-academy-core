@@ -1673,6 +1673,7 @@
       <button type="submit" class="restriction-toggle-btn" style="margin-bottom:0;">➕ Ajouter</button>
     </form>
     <div id="certifTableWrap"></div>
+    <div id="certifEvalWrap"></div>
   </div>
 </section>
 
@@ -5883,6 +5884,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
 
   function renderCertifTable(){
     renderCertifSummary();
+    fmRender();
     const edit = certifCanEdit;
     document.getElementById('certifIntro').textContent = edit
       ? "Le parcours de certification de chaque formateur, étape par étape. Renseigne la date de chaque étape : une date à venir est affichée comme « prévue », puis comptée comme réalisée une fois passée."
@@ -5976,6 +5978,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       certifRecords = dRec.records || [];
       certifCanEdit = !!dRec.canEdit;
       renderCertifTable();
+      if(certifCanEdit) fmInit();
     } catch(err){
       certifTableWrap.innerHTML = '<p style="color:var(--red);font-size:13px;">Erreur de chargement : ' + err.message + '</p>';
     }
@@ -6020,16 +6023,17 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   // ---- Grilles modifiables (axes, critères, coefficients) ----
   //  Sans modification, la grille est celle des fichiers Excel de la direction (tous les coefficients = 1).
   //  Section % = moyenne pondérée (coef. des critères) ; total = moyenne pondérée (coef. des axes) des % de rubriques.
-  let rzGrilles = { prob: null, poste: null };
+  let rzGrilles = { prob: null, poste: null, formateur: null };
   const rzNumFmt = n => String(Math.round(n * 100) / 100).replace('.', ',');
   const rzCoefBadge = c => c === 1 ? '' : ` <span class="rz-coef">coef. ${rzNumFmt(c)}</span>`;
   function rzDefaultForm(kind){
+    if(kind === 'formateur') return Object.assign({ prereq: '', prime: JSON.parse(JSON.stringify(FM_PRIME_DEFAUT)) }, JSON.parse(JSON.stringify(FM_DEFAULT_FORM)));
     return { prereq: kind === 'prob' ? (RZ_FORMS.prereq || '') : '', sections: RZ_FORMS[kind].map(s => ({ titre: s.titre, coef: 1, lignes: s.lignes.map(t => ({ t, c: 1 })) })) };
   }
   function rzNormForm(f, kind){
     if(!f || !Array.isArray(f.sections) || !f.sections.length) return rzDefaultForm(kind);
     const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n >= 0 ? n : 1; };
-    return { prereq: String(f.prereq || ''), sections: f.sections.map(s => ({ titre: String(s.titre || ''), coef: num(s.coef), lignes: (s.lignes || []).map(l => typeof l === 'string' ? { t: l, c: 1 } : { t: String(l.t || ''), c: num(l.c) }) })) };
+    return { prereq: String(f.prereq || ''), prime: f.prime, sections: f.sections.map(s => ({ titre: String(s.titre || ''), coef: num(s.coef), lignes: (s.lignes || []).map(l => typeof l === 'string' ? { t: l, c: 1 } : { t: String(l.t || ''), c: num(l.c) }) })) };
   }
   const rzCurrentForm = kind => rzNormForm(rzGrilles[kind], kind);
   function rzCalc(kind, rep, form){
@@ -6368,7 +6372,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   const rzEditModal = document.getElementById('rzEditModal');
   let rzEd = null; // { kind, form }
   function rzEdOpen(kind){
-    rzEd = { kind, form: JSON.parse(JSON.stringify(rzCurrentForm(kind))) };
+    rzEd = { kind, form: JSON.parse(JSON.stringify(kind === 'formateur' ? fmForm() : rzCurrentForm(kind))) };
     document.getElementById('rzEdError').style.display = 'none';
     rzEdRender();
     rzEditModal.style.display = '';
@@ -6379,7 +6383,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   function rzEdRender(){
     const f = rzEd.form, kind = rzEd.kind, card = rzEditModal.querySelector('.modal-card'), sc = card.scrollTop;
     const totSec = f.sections.reduce((a, s) => a + s.coef, 0) || 1;
-    document.getElementById('rzEdTitle').textContent = 'Modifier la grille — ' + (kind === 'prob' ? 'période probatoire' : 'RZ en poste');
+    document.getElementById('rzEdTitle').textContent = 'Modifier la grille — ' + (kind === 'prob' ? 'période probatoire' : (kind === 'formateur' ? 'évaluations des formateurs' : 'RZ en poste'));
+    { const intro = rzEditModal.querySelector('.modal-sub'); if(intro){ if(!intro.dataset.o) intro.dataset.o = intro.textContent; intro.textContent = kind === 'formateur' ? 'Renomme, ajoute ou supprime les axes et les critères, règle le barème (nombre de points) de chaque critère et les paliers de la prime annuelle. Les évaluations déjà réalisées gardent la grille utilisée le jour où elles ont été faites.' : intro.dataset.o; } }
     document.getElementById('rzEdBody').innerHTML = `
       ${kind === 'prob' ? `<label class="rz-ed-lab">Pré-requis (texte affiché en haut de la grille)<textarea id="rzEdPrereq" rows="2">${rzEsc(f.prereq)}</textarea></label>` : ''}
       ${f.sections.map((s, si) => {
@@ -6387,30 +6392,43 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         return `<div class="rz-ed-sec">
           <div class="rz-ed-sec-head">
             <input type="text" class="rz-ed-in" data-f="titre" data-si="${si}" value="${rzEsc(s.titre)}" placeholder="Nom de l'axe" maxlength="150">
-            <label class="rz-ed-coef">Coef. <input type="number" class="rz-ed-in" data-f="coef" data-si="${si}" value="${s.coef}" min="0" max="20" step="0.5"></label>
+            ${kind === 'formateur' ? '' : `<label class="rz-ed-coef">Coef. <input type="number" class="rz-ed-in" data-f="coef" data-si="${si}" value="${s.coef}" min="0" max="20" step="0.5"></label>`}
             ${rzEdBtns('s', si, f.sections.length, `data-si="${si}"`)}
           </div>
           ${s.lignes.map((l, li) => `<div class="rz-ed-line">
             <input type="text" class="rz-ed-in" data-f="t" data-si="${si}" data-li="${li}" value="${rzEsc(l.t)}" placeholder="Critère" maxlength="400">
-            <label class="rz-ed-coef">Coef. <input type="number" class="rz-ed-in" data-f="c" data-si="${si}" data-li="${li}" value="${l.c}" min="0" max="20" step="0.5"></label>
+            <label class="rz-ed-coef">${kind === 'formateur' ? 'Barème' : 'Coef.'} <input type="number" class="rz-ed-in" data-f="c" data-si="${si}" data-li="${li}" value="${l.c}" min="0" max="20" step="0.5"></label>
             ${rzEdBtns('l', li, s.lignes.length, `data-si="${si}" data-li="${li}"`)}
           </div>`).join('')}
           <button type="button" class="rz-grid-btn" data-act="addl" data-si="${si}">＋ Ajouter un critère</button>
         </div>`; }).join('')}
-      <div style="margin-top:14px;"><button type="button" class="rz-grid-btn" data-act="adds">＋ Ajouter un axe</button></div>`;
+      <div style="margin-top:14px;"><button type="button" class="rz-grid-btn" data-act="adds">＋ Ajouter un axe</button></div>
+      ${kind === 'formateur' ? `<div class="rz-ed-sec"><div class="rz-ed-sec-head"><span style="color:#fff;font-weight:800;">Prime annuelle</span></div>
+        <div class="rz-ed-line"><label class="rz-ed-coef">Heures de référence (temps complet) <input type="number" class="rz-ed-in" data-pr="heures" value="${f.prime.heures}" min="1" max="5000" style="width:90px;"></label></div>
+        ${f.prime.paliers.map((p, i) => `<div class="rz-ed-line"><input type="text" class="rz-ed-in" data-pr="nom" data-i="${i}" value="${rzEsc(p.nom)}" placeholder="Palier" maxlength="40"><label class="rz-ed-coef">dès <input type="number" class="rz-ed-in" data-pr="pct" data-i="${i}" value="${p.pct}" min="0" max="100" step="1"> %</label><label class="rz-ed-coef">montant <input type="number" class="rz-ed-in" data-pr="montant" data-i="${i}" value="${p.montant}" min="0" step="1" style="width:84px;"> €</label><span class="rz-ed-btns"><button type="button" data-act="prdel" data-i="${i}" title="Supprimer">🗑️</button></span></div>`).join('')}
+        <button type="button" class="rz-grid-btn" data-act="pradd">＋ Ajouter un palier</button>
+        <p class="certif-sub" style="margin:6px 0 0;">En dessous du premier palier : pas de prime. Le palier atteint est celui dont le pourcentage est le plus haut parmi ceux atteints.</p></div>` : ''}`;
     card.scrollTop = sc;
     const body = document.getElementById('rzEdBody');
     const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n >= 0 ? n : 1; };
-    body.querySelectorAll('input.rz-ed-in').forEach(inp => {
+    body.querySelectorAll('input.rz-ed-in:not([data-pr])').forEach(inp => {
       const si = +inp.dataset.si, li = inp.dataset.li === undefined ? null : +inp.dataset.li, fld = inp.dataset.f;
       const tgt = () => li === null ? f.sections[si] : f.sections[si].lignes[li];
       if(inp.type === 'number'){ inp.addEventListener('change', () => { tgt()[fld] = num(inp.value); rzEdRender(); }); }
       else { inp.addEventListener('input', () => { tgt()[fld] = inp.value; }); }
     });
     const pre = document.getElementById('rzEdPrereq'); if(pre) pre.addEventListener('input', () => { f.prereq = pre.value; });
+    body.querySelectorAll('input[data-pr]').forEach(inp => inp.addEventListener('input', () => {
+      const n = parseFloat(String(inp.value).replace(',', '.')), v = isFinite(n) && n >= 0 ? n : 0;
+      if(inp.dataset.pr === 'heures') f.prime.heures = v || 1607;
+      else if(inp.dataset.pr === 'nom') f.prime.paliers[+inp.dataset.i].nom = inp.value;
+      else f.prime.paliers[+inp.dataset.i][inp.dataset.pr] = v;
+    }));
     const mv = (arr, i, d) => { const j = i + d; if(j >= 0 && j < arr.length){ const t = arr[i]; arr[i] = arr[j]; arr[j] = t; } };
     body.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => {
       const act = b.dataset.act, si = +b.dataset.si, li = +b.dataset.li, secs = f.sections;
+      if(act === 'pradd'){ f.prime.paliers.push({ nom: '', pct: 100, montant: 0 }); rzEdRender(); return; }
+      if(act === 'prdel'){ if(f.prime.paliers.length <= 1) return; f.prime.paliers.splice(+b.dataset.i, 1); rzEdRender(); return; }
       if(act === 'sup') mv(secs, si, -1); else if(act === 'sdn') mv(secs, si, 1);
       else if(act === 'sdel'){ if(!window.confirm('Supprimer cet axe et tous ses critères ?')) return; secs.splice(si, 1); }
       else if(act === 'lup') mv(secs[si].lignes, li, -1); else if(act === 'ldn') mv(secs[si].lignes, li, 1);
@@ -6440,14 +6458,352 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     }
     if(f.sections.every(s => s.coef === 0)) return bad('Au moins un axe doit avoir un coefficient supérieur à 0.');
     const kind = rzEd.kind;
-    const form = { prereq: String(f.prereq || '').trim(), sections: f.sections.map(s => ({ titre: String(s.titre).trim(), coef: s.coef, lignes: s.lignes.map(l => ({ t: String(l.t).trim(), c: l.c })) })) };
+    const form = { prereq: String(f.prereq || '').trim(), prime: kind === 'formateur' ? fmPrimeNorm(f.prime) : undefined, sections: f.sections.map(s => ({ titre: String(s.titre).trim(), coef: s.coef, lignes: s.lignes.map(l => ({ t: String(l.t).trim(), c: l.c })) })) };
     const btn = document.getElementById('rzEdSave'); btn.disabled = true;
     const out = await rzAppel({ sheet: 'save_grille_rz', type: kind, grille: form });
     btn.disabled = false;
-    if(out){ rzGrilles[kind] = form; rzEdClose(); }
+    if(out){ rzGrilles[kind] = form; rzEdClose(); if(kind === 'formateur') fmRender(); }
   });
   document.getElementById('rzEditProb').addEventListener('click', () => rzEdOpen('prob'));
   document.getElementById('rzEditPoste').addEventListener('click', () => rzEdOpen('poste'));
+
+  // ---------------- Évaluations des formateurs : 4 trimestres, bilan de juillet, évaluation annuelle (+ prime) ----------------
+  //  Même principe que la certification RZ : grille modifiable (axes, critères, barème en points), chaque évaluation garde la grille utilisée.
+  //  Calcul identique au fichier Excel : OUI = 100 % du barème, PARTIELLEMENT = 50 %, NON = 0 ; une ligne non remplie n'est pas comptée.
+  const FM_DEFAULT_FORM = {"sections": [{"titre": "Autonomie dans le poste", "coef": 1, "lignes": [{"t": "Le formateur/trice a effectué des suivis à 4 semaines et 60 jours au trimestre", "c": 2}, {"t": "Le formateur/trice a fait des formations et/ou des suivis de formation dans le mois sans qu'elles soient planifiées", "c": 2}, {"t": "Le formateur/trice a bien effectué la validation des vérifications et les a enregistrées", "c": 1}, {"t": "Le formateur/trice a pris des initiatives de formation", "c": 1}, {"t": "Le formateur/trice donne systématiquement du feadback aux employés à leur arrivée et à leur départ", "c": 1}, {"t": "Le formateur/trice prend des initiatives de formation dès que l'activité est calme", "c": 2}, {"t": "S’adapte aux situations inatendues, il/elle sait gérer son stress", "c": 1}, {"t": "Le formateur/trice a une vraie culture service : fait appliquer le module : \"culture service\" aux équipiers sur ses quarts de travail", "c": 1}]}, {"titre": "Gestion opérationnelle", "coef": 1, "lignes": [{"t": "Le formateur/trice Coach et motive les équipiers sous sa supervision", "c": 5}, {"t": "Le formateur/trice est exemplaire sur le respect des procédures", "c": 4}, {"t": "Fait preuve de leadership et de dynamisme pour booster les équipes", "c": 3}, {"t": "Prend en charge les clients au comptoir et s'assure que les équipiers le fasse aussi", "c": 1}, {"t": "Le formateur/trice fait respecter les normes de sécurité alimentaire et de propreté (timers en cuisine,etc...)", "c": 3}, {"t": "S'assure que le nettoyage au fur et à mesure soit respecter pendant le rush", "c": 2}, {"t": "Le formateur/trice crée du dynamisme sur ses quarts de travail.", "c": 4}, {"t": "Le formateur s'informe régulièrement des actus et nouveaux process", "c": 3}]}, {"titre": "Communication", "coef": 1, "lignes": [{"t": "Le formateur/trice communique éfficacement avec le manager sur sa prise de décision", "c": 2}, {"t": "Le formateur/trice communique en permanence avec les équipiers pour dynamiser la zone", "c": 1}, {"t": "Le formateur/trice a une communication adaptée en fonction de la situation (participative ou directive)", "c": 2}, {"t": "Le formateur/trice fait de la reconnaissance positive et constructive tout au long du rush", "c": 2}, {"t": "Communique régulièrement avec les autres formateurs et le responsable de formation", "c": 1}, {"t": "Le formateur/trice s'assure que la prise de commande efficace soit respectée et que les employés appliquent la cutlure service à l'enlevement.", "c": 1}]}, {"titre": "Autres", "coef": 1, "lignes": [{"t": "Le formateur/trice a un comportement exemplaire (présentation professionnelle propre et soignée, assiduité, ponctualité, sérieux, positif)", "c": 3}, {"t": "Le formateur/trice réalise un feedback à chaque équipier qui quitte sa zone", "c": 2}, {"t": "Le formateur/trice demande un feedback au manager de shift", "c": 2}]}]};
+  const FM_PRIME_DEFAUT = { heures: 1607, paliers: [{ nom: 'Irrégulier', pct: 65, montant: 364 }, { nom: 'Significatif', pct: 85, montant: 910 }, { nom: 'Exceptionnel', pct: 95, montant: 1365 }] };
+  const FM_APPRECIATION = ["S’assure d’atteindre les objectifs fixés par son responsable de la formation", "Agit au mieux des intérêts du restaurant en remontant les difficultés rencontrés", "Participe à l’innovation / au changement", "Contribue à la performance économique du restaurant en faisant respecter les normes", "Attache de l’importance à la notion d’équipe"];
+  const FM_COLS = [{k:'t1', lab:'1er trimestre'}, {k:'t2', lab:'2e trimestre'}, {k:'bilan', lab:'Bilan de juillet'}, {k:'t3', lab:'3e trimestre'}, {k:'t4', lab:'4e trimestre'}, {k:'annuel', lab:'Évaluation annuelle'}];
+  const FM_LAB = { t1:'1er trimestre', t2:'2e trimestre', t3:'3e trimestre', t4:'4e trimestre', bilan:'Bilan intermédiaire de juillet', annuel:'Évaluation annuelle' };
+  const FM_OPTS = [['OUI','OUI'], ['PARTIELLEMENT','PARTIEL'], ['NON','NON']];
+  let fmEvals = [], fmLoaded = false, fmAnnee = String(new Date().getFullYear()), fmGrid = null;
+  const certifEvalWrap = document.getElementById('certifEvalWrap');
+
+  const fmPrimeNorm = p => {
+    const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n >= 0 ? n : 0; };
+    if(!p || !Array.isArray(p.paliers) || !p.paliers.length) return JSON.parse(JSON.stringify(FM_PRIME_DEFAUT));
+    return { heures: num(p.heures) || 1607, paliers: p.paliers.map(x => ({ nom: String(x.nom || ''), pct: num(x.pct), montant: num(x.montant) })).sort((a, b) => a.pct - b.pct) };
+  };
+  const fmForm = () => { const f = rzNormForm(rzGrilles.formateur, 'formateur'); f.prime = fmPrimeNorm(f.prime); return f; };
+  function fmCls(n, form){
+    if(n === null) return 'gray';
+    const p = fmPrimeNorm((form || fmForm()).prime).paliers;
+    const vert = (p[1] || p[0] || { pct: 85 }).pct, ambre = p[0].pct;
+    return n >= vert ? 'green' : (n >= ambre ? 'amber' : 'red');
+  }
+  const fmLegend = form => { const p = fmPrimeNorm(form.prime).paliers; return 'Vert ≥ ' + (p[1] || p[0]).pct + ' % · orange ≥ ' + p[0].pct + ' % · rouge en dessous'; };
+  const fmPts = v => v === 'OUI' ? 1 : (v === 'PARTIELLEMENT' ? 0.5 : (v === 'NON' ? 0 : null));
+  function fmCalc(rep, form){
+    const L = [];
+    const par = form.sections.map((s, si) => {
+      let p = 0, b = 0;
+      s.lignes.forEach((l, li) => {
+        const sc = fmPts(rep[si + '-' + li]);
+        if(sc === null) return;
+        p += sc * l.c; b += l.c; L.push({ a: s.titre, t: l.t, p: sc * l.c, b: l.c });
+      });
+      return { p, b, pct: b ? (p / b) * 100 : null };
+    });
+    const P = par.reduce((x, y) => x + y.p, 0), B = par.reduce((x, y) => x + y.b, 0);
+    return { par, p: P, b: B, total: B ? (P / B) * 100 : null, L };
+  }
+  const fmEvalDe = (nom, per) => fmEvals.find(e => e.nom === nom && e.annee === fmAnnee && e.periode === per) || null;
+  // Cumul des résumés de plusieurs périodes : par ligne (axe + texte), par axe et au total.
+  function fmCumul(nom, pers){
+    const lignes = {}, axes = {}, ordre = [];
+    let p = 0, b = 0, n = 0;
+    pers.forEach(per => { const e = fmEvalDe(nom, per); if(!e || !e.resume || !e.resume.L) return; n++;
+      e.resume.L.forEach(l => {
+        const k = l.a + '||' + l.t; const x = lignes[k] || (lignes[k] = { a: l.a, t: l.t, p: 0, b: 0 }); x.p += l.p; x.b += l.b;
+        if(!axes[l.a]){ axes[l.a] = { p: 0, b: 0 }; ordre.push(l.a); } axes[l.a].p += l.p; axes[l.a].b += l.b; p += l.p; b += l.b;
+      }); });
+    return { lignes, axes, ordre, p, b, n, pct: b ? (p / b) * 100 : null };
+  }
+  function fmPrime(note, heures, form){
+    const pr = fmPrimeNorm(form.prime);
+    if(note === null) return { palier: null, montant: null };
+    let pal = null; pr.paliers.forEach(x => { if(note >= x.pct) pal = x; });
+    const base = pal ? pal.montant : 0;
+    return { palier: pal, montant: Math.round(base * (heures / pr.heures) * 100) / 100 };
+  }
+  const fmEur = n => (Math.round(n * 100) / 100).toString().replace('.', ',') + ' €';
+  const fmIso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const fmFr = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : '—'; };
+
+  // Échéances indicatives de chaque évaluation (à ajuster avec la direction de la formation).
+  const FM_ECH = { t1:[3,31], t2:[6,30], bilan:[7,31], t3:[9,30], t4:[12,31], annuel:[1,31,1] };  // l'évaluation annuelle se fait en janvier de l'année suivante
+  let fmFilter = 'todo';
+  function fmLignes(){
+    const today = fmIso(new Date()), lignes = [];
+    certifRecords.forEach(rec => FM_COLS.forEach(col => {
+      const e = fmEvalDe(rec.nom, col.k), fait = !!(e && e.date);
+      const ech = (Number(fmAnnee) + (FM_ECH[col.k][2] || 0)) + '-' + String(FM_ECH[col.k][0]).padStart(2, '0') + '-' + String(FM_ECH[col.k][1]).padStart(2, '0');
+      const prev = (e && e.prevue) || '';
+      let statut;
+      if(fait) statut = 'fait'; else if(prev) statut = prev < today ? 'retard' : 'planifie'; else statut = ech < today ? 'retard' : 'aplanifier';
+      lignes.push({ rec, col, e, fait, ech, prev, statut });
+    }));
+    // Classé par date : tous les 1ers trimestres, puis les 2es, le bilan de juillet, les 3es, les 4es et les évaluations annuelles ; les formateurs par ordre alphabétique.
+    const rang = k => FM_COLS.findIndex(c => c.k === k);
+    lignes.sort((a, b) => rang(a.col.k) - rang(b.col.k) || a.rec.nom.localeCompare(b.rec.nom, 'fr'));
+    return lignes;
+  }
+  function fmRender(){
+    if(!certifEvalWrap) return;
+    if(!certifCanEdit || !fmLoaded){ certifEvalWrap.innerHTML = ''; return; }
+    const form = fmForm();
+    const annees = []; for(let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 1; y--) annees.push(String(y));
+    const all = fmLignes(), cnt = k => all.filter(l => l.statut === k).length;
+    const lignes = all.filter(l => fmFilter === 'all' || (fmFilter === 'done' ? l.fait : !l.fait));
+    const pill = { retard:['red','En retard'], aplanifier:['amber','À planifier'], planifie:['gray','Planifiée'], fait:['green','Réalisée'] };
+    let prevNom = null;
+    const rows = lignes.map(l => {
+      const safe = rzEsc(l.rec.nom), k = l.col.k, e = l.e, p = e ? parseFloat(e.pct) : NaN;
+      const debut = l.col.k !== prevNom; prevNom = l.col.k;
+      const btn = (lab, ro, cls) => `<button type="button" class="rz-grid-btn ${cls || ''}" data-fm-nom="${safe}" data-fm-per="${k}" data-fm-ro="${ro ? 1 : 0}">${lab}</button>`;
+      const res = l.fait ? `${fmFr(e.date)}${isNaN(p) ? '' : ` · <span class="action-pill ${fmCls(p, form)}">${rzFmtPct(p)}</span>`}` : '—';
+      const pr = k === 'annuel' && l.fait && e.resume && e.resume.montant !== undefined && e.resume.montant !== null ? `<b>${fmEur(e.resume.montant)}</b>${e.resume.palier ? `<span class="certif-sub" style="display:block;">${rzEsc(e.resume.palier)}</span>` : ''}` : '—';
+      return `<tr class="${l.statut === 'retard' ? 'rz-plan-row-late' : (l.fait ? 'rz-plan-row-done' : '')}"${debut ? ' style="box-shadow:inset 0 3px 0 #d6d1c2;"' : ''}>
+        <td><b>${displayName(l.rec.nom)}</b></td><td>${rzEsc(FM_LAB[k])}</td><td>${fmFr(l.ech)}</td>
+        <td>${l.fait ? '—' : `<input type="date" class="certif-input" data-fm-prev="1" data-nom="${safe}" data-per="${k}" value="${rzEsc(l.prev)}">`}</td>
+        <td><span class="action-pill ${pill[l.statut][0]}">${pill[l.statut][1]}</span></td><td>${res}</td><td>${pr}</td>
+        <td><div style="display:flex;flex-direction:column;align-items:center;gap:8px;">${btn(k === 'bilan' ? '📝 Bilan' : (k === 'annuel' ? '📝 Évaluation' : '📝 Grille'), false)}${l.fait ? btn('👁️ Consulter', true, 'rz-view-btn') : ''}</div></td></tr>`;
+    }).join('');
+    certifEvalWrap.innerHTML = `<h4 class="rz-block-title">Évaluations des formateurs <span>(${cnt('retard')} en retard · ${cnt('aplanifier')} à planifier · ${cnt('planifie')} planifiée${cnt('planifie') > 1 ? 's' : ''} · ${cnt('fait')} réalisée${cnt('fait') > 1 ? 's' : ''})</span></h4>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+        <label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Afficher :
+          <select id="fmFilter" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
+            <option value="todo"${fmFilter === 'todo' ? ' selected' : ''}>Reste à faire</option><option value="done"${fmFilter === 'done' ? ' selected' : ''}>Déjà réalisées</option><option value="all"${fmFilter === 'all' ? ' selected' : ''}>Tout</option></select></label>
+        <label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Année :
+          <select id="fmAnnee" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">${annees.map(a => `<option value="${a}"${a === fmAnnee ? ' selected' : ''}>${a}</option>`).join('')}</select></label>
+        <button type="button" class="rz-grid-btn" id="fmEditGrid">⚙️ Modifier la grille d'évaluation</button>
+        <span class="certif-sub" style="display:inline;">${fmLegend(form)}</span></div>
+      ${!certifRecords.length ? '<p style="color:var(--ink-soft);font-size:13px;">Ajoute un formateur au suivi pour commencer ses évaluations.</p>' : (!lignes.length ? '<p style="color:var(--ink-soft);font-size:13px;">Rien à afficher avec ce filtre.</p>' : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
+        <th>Formateur</th><th>Évaluation</th><th data-tip="Date limite indicative pour réaliser l'évaluation">Échéance</th><th data-tip="Date à laquelle tu prévois de faire l'évaluation">Date prévue</th><th>Statut</th><th>Résultat</th><th data-tip="Prime annuelle : palier atteint puis prorata des heures travaillées">Prime annuelle</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`)}`;
+    document.getElementById('fmFilter').addEventListener('change', e => { fmFilter = e.target.value; fmRender(); });
+    document.getElementById('fmAnnee').addEventListener('change', e => { fmAnnee = e.target.value; fmRender(); });
+    document.getElementById('fmEditGrid').addEventListener('click', () => rzEdOpen('formateur'));
+    certifEvalWrap.querySelectorAll('button[data-fm-per]').forEach(b => b.addEventListener('click', () => fmOpen(b.dataset.fmNom, b.dataset.fmPer, b.dataset.fmRo === '1')));
+    certifEvalWrap.querySelectorAll('input[data-fm-prev]').forEach(inp => inp.addEventListener('change', async () => {
+      inp.disabled = true;
+      const d = await fmAppel({ sheet:'update_prevue_formateur', nom: inp.dataset.nom, annee: fmAnnee, periode: inp.dataset.per, prevue: inp.value });
+      if(d) fmEvals = d.evaluations || fmEvals;
+      fmRender();
+    }));
+  }
+
+  async function fmInit(){
+    fmLoaded = false;
+    try{
+      const call = body => fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody(Object.assign({ targetRestaurant: currentRestaurant }, body))) }).then(r => r.json());
+      const [ev, gr] = await Promise.all([call({ sheet:'get_evaluations_formateur' }), call({ sheet:'get_grille_rz' }).catch(() => null)]);
+      if(!ev.ok) throw new Error(ev.error || 'Échec');
+      fmEvals = ev.evaluations || [];
+      if(gr && gr.ok && gr.grilles){ rzGrilles = { prob: gr.grilles.prob || null, poste: gr.grilles.poste || null, formateur: gr.grilles.formateur || null }; }
+      fmLoaded = true;
+    } catch(e){ fmLoaded = false; if(certifEvalWrap) certifEvalWrap.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Les évaluations des formateurs seront disponibles après la mise à jour du serveur.</p>'; return; }
+    fmRender();
+  }
+  async function fmAppel(corps){
+    try{
+      const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody(Object.assign({ targetRestaurant: currentRestaurant }, corps))) });
+      const d = await res.json();
+      if(!d.ok) throw new Error(d.error || 'Échec');
+      return d;
+    } catch(err){ alert('Erreur : ' + err.message); return null; }
+  }
+
+  // ---- Fenêtre d'évaluation (trimestre, bilan, annuelle) ----
+  async function fmOpen(nom, per, ro){
+    const d = await fmAppel({ sheet:'get_evaluation_formateur', nom, annee: fmAnnee, periode: per });
+    if(!d) return;
+    const ev = d.evaluation, rep = (ev && ev.reponses) || {};
+    const form = rep._grille ? (() => { const f = rzNormForm(rep._grille, 'formateur'); f.prime = fmPrimeNorm(rep._grille.prime); return f; })() : fmForm();
+    delete rep._grille;
+    fmGrid = { nom, per, ro, rep, form, ev };
+    fmDraw();
+    rzGridModal.style.display = '';
+  }
+  function fmHead(){
+    const g = fmGrid, ev = g.ev, ro = g.ro;
+    const dateInit = (ev && ev.date) || fmIso(new Date());
+    const parInit = (ev && ev.par) || (isGerant ? '' : (sessionFormateur || ''));
+    return `<div class="rz-head-fields">
+        <label>Formateur<input type="text" value="${rzEsc(displayName(g.nom))}" disabled></label>
+        <label>Date du rendez-vous<input type="date" id="fmDate" value="${rzEsc(dateInit)}"${ro ? ' disabled' : ''}></label>
+        <label>Évalué par<input type="text" id="fmPar" value="${rzEsc(parInit)}" maxlength="80" placeholder="Nom de l'évaluateur"${ro ? ' disabled' : ''}></label></div>`;
+  }
+  const fmTa = (id, val, ph, ro, rows) => `<textarea id="${id}" rows="${rows || 2}" placeholder="${rzEsc(ph || '')}"${ro ? ' disabled' : ''} style="display:block;width:100%;margin-top:4px;font:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:8px;">${rzEsc(val || '')}</textarea>`;
+  const fmBlocTitre = t => `<div class="rz-sec-head" style="margin-top:20px;"><h4>${rzEsc(t)}</h4></div>`;
+  function fmDraw(){
+    const g = fmGrid, per = g.per, ro = g.ro, form = g.form, rep = g.rep;
+    const tit = displayName(g.nom) + ' — ' + FM_LAB[per] + ' ' + fmAnnee;
+    document.getElementById('rzGridTitle').textContent = tit;
+    let body = '';
+    if(per.charAt(0) === 't'){
+      body = `<p class="modal-sub" style="margin-top:0;">Bilan trimestriel du formateur — ${FM_LAB[per]} ${fmAnnee}</p>${fmHead()}
+        ${form.sections.map((s, si) => `<div class="rz-sec"><div class="rz-sec-head"><h4>${rzEsc(s.titre)}</h4><span class="action-pill gray" id="fmSecPct${si}">—</span></div>
+          ${s.lignes.map((l, li) => `<div class="rz-line"><div class="rz-line-txt">${rzEsc(l.t)} <span class="rz-coef">${rzNumFmt(l.c)} pt${l.c > 1 ? 's' : ''}</span></div><div class="rz-opts">
+            ${FM_OPTS.map(([val, lab]) => `<label class="rz-opt rz-opt-${val === 'PARTIELLEMENT' ? 'E' : val}"><input type="radio" name="fm_${si}_${li}" value="${val}" data-k="${si}-${li}"${rep[si + '-' + li] === val ? ' checked' : ''}${ro ? ' disabled' : ''}><span>${lab}</span></label>`).join('')}
+          </div><input type="text" class="rz-line-com" data-c="${si}-${li}" value="${rzEsc(rep['c' + si + '-' + li] || '')}" maxlength="300" placeholder="Commentaire"${ro ? ' disabled' : ''}></div>`).join('')}
+          <div class="rz-axe-wrap"><input type="text" class="rz-axe-com" data-cs="${si}" value="${rzEsc(rep['cs' + si] || '')}" maxlength="500" placeholder="Commentaire sur cet axe"${ro ? ' disabled' : ''}></div></div>`).join('')}
+        <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires et engagement du collaborateur${fmTa('fmCom', g.ev && g.ev.commentaire, '', ro, 3)}</label>`;
+    } else if(per === 'bilan'){
+      const c = fmCumul(g.nom, ['t1', 't2']);
+      body = `<p class="modal-sub" style="margin-top:0;">Bilan intermédiaire de juillet — niveau de maîtrise calculé sur les 1er et 2e trimestres ${fmAnnee}${c.n < 2 ? ' <b>(il manque un trimestre : résultat provisoire)</b>' : ''}</p>${fmHead()}
+        ${form.sections.map((s, si) => { const ax = c.axes[s.titre];
+          const ligs = s.lignes.map((l, li) => { const x = c.lignes[s.titre + '||' + l.t]; const pc = x && x.b ? x.p / x.b * 100 : null; return { l, li, pc }; });
+          const vals = ligs.filter(x => x.pc !== null), moy = vals.length ? vals.reduce((a, x) => a + x.pc, 0) / vals.length : null;
+          return `<div class="rz-sec"><div class="rz-sec-head"><h4>${rzEsc(s.titre)}</h4><span class="action-pill ${fmCls(moy, form)}">${rzFmtPct(moy)}</span></div>
+            ${ligs.map(x => `<div class="rz-line"><div class="rz-line-txt">${rzEsc(x.l.t)}</div><span class="action-pill ${fmCls(x.pc, form)}">${rzFmtPct(x.pc)}</span>
+              <input type="text" class="rz-line-com" data-am="${si}-${x.li}" value="${rzEsc(rep['am' + si + '-' + x.li] || '')}" maxlength="300" placeholder="Actions à mener"${ro ? ' disabled' : ''}></div>`).join('')}</div>`; }).join('')}
+        <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires et engagement du collaborateur${fmTa('fmCom', g.ev && g.ev.commentaire, '', ro, 3)}</label>`;
+    } else {
+      const c = fmCumul(g.nom, ['t1', 't2', 't3', 't4']);
+      body = `<p class="modal-sub" style="margin-top:0;">Évaluation annuelle ${fmAnnee} — bilan des ${c.n} trimestre${c.n > 1 ? 's' : ''} saisi${c.n > 1 ? 's' : ''}${c.n < 4 ? ' <b>(provisoire)</b>' : ''}</p>${fmHead()}
+        ${fmBlocTitre('I – Bilan annuel des critères de performance')}
+        <div class="rz-sec" style="margin-top:6px;">${form.sections.map(s => { const a = c.axes[s.titre]; const pc = a && a.b ? a.p / a.b * 100 : null; return `<div class="rz-line"><div class="rz-line-txt"><b>${rzEsc(s.titre)}</b></div><span class="action-pill ${fmCls(pc, form)}">${rzFmtPct(pc)}</span></div>`; }).join('')}</div>
+        ${fmBlocTitre('II – Objectifs pour l\'année suivante')}
+        ${form.sections.map((s, si) => `<label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:8px;">${rzEsc(s.titre)}${fmTa('fmOb' + si, rep['ob' + si], '', ro, 2)}</label>`).join('')}
+        <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:8px;">Souhait du formateur visant à soutenir son développement personnel (1 à 2 objectifs)${fmTa('fmSouhait', rep.souhait, '', ro, 2)}</label>
+        ${fmBlocTitre('III – Appréciation générale')}
+        <div class="rz-sec" style="margin-top:6px;">${FM_APPRECIATION.map((t, i) => `<div class="rz-line"><div class="rz-line-txt">${rzEsc(t)}</div><div class="rz-opts">${FM_OPTS.map(([val, lab]) => `<label class="rz-opt rz-opt-${val === 'PARTIELLEMENT' ? 'E' : val}"><input type="radio" name="fm_ap${i}" value="${val}" data-ap="${i}"${rep['ap' + i] === val ? ' checked' : ''}${ro ? ' disabled' : ''}><span>${lab}</span></label>`).join('')}</div></div>`).join('')}</div>
+        ${fmBlocTitre('IV – Évolution professionnelle et / ou mobilité')}
+        <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:8px;">A – Souhaits du collaborateur : vers quel poste${fmTa('fmEvoA', rep.evoA, '', ro, 2)}</label>
+        <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:8px;">B – Avis de la hiérarchie et à quelle échéance${fmTa('fmEvoB', rep.evoB, '', ro, 2)}</label>
+        ${fmBlocTitre('V – Commentaires et engagement du collaborateur')}
+        ${fmTa('fmCom', g.ev && g.ev.commentaire, '', ro, 3)}`;
+    }
+    body += `<div class="rz-total" id="fmTotal"></div><div class="modal-error" id="fmError" style="display:none;"></div>
+      <div class="modal-actions"><button type="button" id="fmCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="fmPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button>${ro ? '<button type="button" id="fmEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="fmSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
+    document.getElementById('rzGridContent').innerHTML = body;
+    const M = rzGridModal;
+    M.querySelectorAll('input[type=radio][data-k]').forEach(r => r.addEventListener('change', () => { rep[r.dataset.k] = r.value; fmRefresh(); }));
+    M.querySelectorAll('input[type=radio][data-ap]').forEach(r => r.addEventListener('change', () => { rep['ap' + r.dataset.ap] = r.value; }));
+    M.querySelectorAll('.rz-axe-com').forEach(i => i.addEventListener('input', () => { rep['cs' + i.dataset.cs] = i.value; }));
+    M.querySelectorAll('.rz-line-com[data-c]').forEach(i => i.addEventListener('input', () => { rep['c' + i.dataset.c] = i.value; }));
+    M.querySelectorAll('.rz-line-com[data-am]').forEach(i => i.addEventListener('input', () => { rep['am' + i.dataset.am] = i.value; }));
+    form.sections.forEach((s, si) => { const t = document.getElementById('fmOb' + si); if(t) t.addEventListener('input', () => { rep['ob' + si] = t.value; }); });
+    [['fmSouhait', 'souhait'], ['fmEvoA', 'evoA'], ['fmEvoB', 'evoB']].forEach(([id, k]) => { const t = document.getElementById(id); if(t) t.addEventListener('input', () => { rep[k] = t.value; }); });
+    document.getElementById('fmCancel').addEventListener('click', fmClose);
+    document.getElementById('fmPdf').addEventListener('click', fmPdf);
+    if(ro) document.getElementById('fmEdit').addEventListener('click', () => { g.ro = false; fmDraw(); });
+    else document.getElementById('fmSave').addEventListener('click', fmSave);
+    fmRefresh();
+  }
+  function fmClose(){ rzGridModal.style.display = 'none'; fmGrid = null; rzGrid = null; }
+  // Éléments qui dépendent de la saisie : % par axe, total, prime.
+  function fmSyntheseAnnuelle(){
+    const g = fmGrid, c = fmCumul(g.nom, ['t1', 't2', 't3', 't4']);
+    const h = parseFloat(String(g.rep.heures === undefined ? '' : g.rep.heures).replace(',', '.'));
+    const heures = isFinite(h) && h >= 0 ? h : 0;
+    return { c, heures, pr: fmPrime(c.pct, heures, g.form) };
+  }
+  function fmRefresh(){
+    const g = fmGrid, per = g.per, el = document.getElementById('fmTotal');
+    if(per.charAt(0) === 't'){
+      const r = fmCalc(g.rep, g.form);
+      r.par.forEach((x, si) => { const e = document.getElementById('fmSecPct' + si); if(e){ e.className = 'action-pill ' + fmCls(x.pct, g.form); e.textContent = rzFmtPct(x.pct) + (x.b ? ' · ' + rzNumFmt(x.p) + ' / ' + rzNumFmt(x.b) + ' pts' : ''); } });
+      el.innerHTML = `<span>Maîtrise du poste</span> <span class="action-pill ${fmCls(r.total, g.form)}" style="font-size:15px;">${rzFmtPct(r.total)}</span> <span>· ${rzNumFmt(r.p)} / ${rzNumFmt(r.b)} pts</span> <span class="certif-sub" style="display:inline;margin-left:8px;">${fmLegend(g.form)}</span>`;
+    } else if(per === 'bilan'){
+      const c = fmCumul(g.nom, ['t1', 't2']);
+      el.innerHTML = `<span>Total des actions maîtrisées</span> <span class="action-pill ${fmCls(c.pct, g.form)}" style="font-size:15px;">${rzFmtPct(c.pct)}</span> <span class="certif-sub" style="display:inline;margin-left:8px;">${fmLegend(g.form)}</span>`;
+    } else {
+      const s = fmSyntheseAnnuelle(), pr = g.form.prime;
+      el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;"><span>Note obtenue (moyenne des trimestres)</span> <span class="action-pill ${fmCls(s.c.pct, g.form)}" style="font-size:15px;">${rzFmtPct(s.c.pct)}</span>
+        <span>· Palier : <b>${s.pr.palier ? rzEsc(s.pr.palier.nom) : 'aucun'}</b>${s.pr.palier ? ' (' + fmEur(s.pr.palier.montant) + ' pour un temps complet)' : ''}</span>
+        <label style="font-weight:700;font-size:12px;">Heures travaillées sur l'année <input type="number" id="fmHeures" min="0" max="5000" step="0.5" value="${rzEsc(g.rep.heures === undefined ? '' : g.rep.heures)}"${g.ro ? ' disabled' : ''} style="width:90px;font:inherit;padding:5px 7px;border:1px solid var(--line);border-radius:8px;"> / ${pr.heures} h</label>
+        <span>· Prime : <b>${s.pr.montant === null ? '—' : fmEur(s.pr.montant)}</b></span></div>`;
+      const hi = document.getElementById('fmHeures'); if(hi) hi.addEventListener('input', () => { g.rep.heures = hi.value; fmRefreshPrime(); });
+    }
+  }
+  function fmRefreshPrime(){
+    const g = fmGrid; if(!g || g.per !== 'annuel') return;
+    const s = fmSyntheseAnnuelle();
+    const spans = document.querySelectorAll('#fmTotal span'); const last = spans[spans.length - 1];
+    if(last) last.innerHTML = '· Prime : <b>' + (s.pr.montant === null ? '—' : fmEur(s.pr.montant)) + '</b>';
+  }
+  async function fmSave(){
+    const g = fmGrid, err = document.getElementById('fmError'); err.style.display = 'none';
+    const date = document.getElementById('fmDate').value;
+    const bad = m => { err.textContent = m; err.style.display = 'block'; };
+    if(!date) return bad('Renseigne la date du rendez-vous.');
+    const com = (document.getElementById('fmCom') || { value: '' }).value.trim();
+    let pct = '', resume = null;
+    const reponses = Object.assign({}, g.rep, { _grille: g.form });
+    if(g.per.charAt(0) === 't'){
+      const r = fmCalc(g.rep, g.form);
+      if(r.total === null) return bad('Réponds à au moins une ligne avant d\'enregistrer.');
+      pct = Math.round(r.total * 10) / 10; resume = { p: Math.round(r.p * 100) / 100, b: r.b, L: r.L };
+    } else if(g.per === 'bilan'){
+      const c = fmCumul(g.nom, ['t1', 't2']); pct = c.pct === null ? '' : Math.round(c.pct * 10) / 10;
+    } else {
+      const s = fmSyntheseAnnuelle(); pct = s.c.pct === null ? '' : Math.round(s.c.pct * 10) / 10;
+      resume = { heures: s.heures, palier: s.pr.palier ? s.pr.palier.nom : '', montant: s.pr.montant };
+    }
+    const btn = document.getElementById('fmSave'); btn.disabled = true;
+    const d = await fmAppel({ sheet:'save_evaluation_formateur', nom: g.nom, annee: fmAnnee, periode: g.per, date, par: document.getElementById('fmPar').value.trim(), pct, reponses, resume, commentaire: com });
+    if(d){ fmEvals = d.evaluations || fmEvals; fmClose(); fmRender(); } else btn.disabled = false;
+  }
+  // PDF : même habillage que la certification RZ.
+  function fmPdf(){
+    const g = fmGrid; if(!g) return;
+    const per = g.per, form = g.form, rep = g.rep;
+    const couleur = n => n === null ? '#888' : (fmCls(n, form) === 'green' ? '#1b7a3d' : (fmCls(n, form) === 'amber' ? '#b86e00' : '#c0392b'));
+    const pill = n => `<span style="color:${couleur(n)};float:right;background:#fff;border-radius:999px;padding:1px 11px;">${rzFmtPct(n)}</span>`;
+    const dateV = (document.getElementById('fmDate') || {}).value, parV = ((document.getElementById('fmPar') || {}).value || '').trim();
+    const comV = ((document.getElementById('fmCom') || {}).value || '').trim();
+    const rep2 = v => v ? `<span class="rep r-${v === 'OUI' ? 'OUI' : (v === 'NON' ? 'NON' : 'E')}">${v === 'PARTIELLEMENT' ? 'PARTIEL' : v}</span>` : '<span class="r-none">—</span>';
+    let corps = '', total = '';
+    if(per.charAt(0) === 't'){
+      const r = fmCalc(rep, form);
+      corps = form.sections.map((s, si) => `<h3>${rzEsc(s.titre)} ${pill(r.par[si].pct)}</h3><table><tr class="h"><td>Critère</td><td>Barème</td><td>Évaluation</td><td>Commentaire</td></tr>${s.lignes.map((l, li) => `<tr><td>${rzEsc(l.t)}</td><td style="text-align:center;">${rzNumFmt(l.c)}</td><td class="repc">${rep2(rep[si + '-' + li])}</td><td class="lc">${rzEsc(rep['c' + si + '-' + li] || '')}</td></tr>`).join('')}</table>${rep['cs' + si] ? '<div class="axcom"><b>Commentaire sur l\'axe :</b> ' + rzEsc(rep['cs' + si]) + '</div>' : ''}`).join('');
+      total = `Maîtrise du poste : <span style="color:${couleur(r.total)};">${rzFmtPct(r.total)}</span> (${rzNumFmt(r.p)} / ${rzNumFmt(r.b)} pts)`;
+    } else if(per === 'bilan'){
+      const c = fmCumul(g.nom, ['t1', 't2']);
+      corps = form.sections.map((s, si) => { const ligs = s.lignes.map((l, li) => { const x = c.lignes[s.titre + '||' + l.t]; return { l, li, pc: x && x.b ? x.p / x.b * 100 : null }; }); const v = ligs.filter(x => x.pc !== null); const moy = v.length ? v.reduce((a, x) => a + x.pc, 0) / v.length : null;
+        return `<h3>${rzEsc(s.titre)} ${pill(moy)}</h3><table><tr class="h"><td>Critère</td><td>Niveau de maîtrise</td><td>Actions à mener</td></tr>${ligs.map(x => `<tr><td>${rzEsc(x.l.t)}</td><td class="repc" style="color:${couleur(x.pc)};font-weight:700;">${rzFmtPct(x.pc)}</td><td class="lc">${rzEsc(rep['am' + si + '-' + x.li] || '')}</td></tr>`).join('')}</table>`; }).join('');
+      total = `Total des actions maîtrisées : <span style="color:${couleur(c.pct)};">${rzFmtPct(c.pct)}</span>`;
+    } else {
+      const s = fmSyntheseAnnuelle();
+      const area = t => `<div class="com">${rzEsc(t || '')}</div>`;
+      corps = `<h3>I – Bilan annuel des critères de performance</h3><table>${form.sections.map(x => { const a = s.c.axes[x.titre]; const pc = a && a.b ? a.p / a.b * 100 : null; return `<tr><td>${rzEsc(x.titre)}</td><td class="repc" style="color:${couleur(pc)};font-weight:700;">${rzFmtPct(pc)}</td></tr>`; }).join('')}</table>
+        <h3>II – Objectifs pour l'année suivante</h3>${form.sections.map((x, si) => `<b style="font-size:11.5px;">${rzEsc(x.titre)}</b>${area(rep['ob' + si])}`).join('')}<b style="font-size:11.5px;">Souhait du formateur visant à soutenir son développement personnel</b>${area(rep.souhait)}
+        <h3>III – Appréciation générale</h3><table>${FM_APPRECIATION.map((t, i) => `<tr><td>${rzEsc(t)}</td><td class="repc">${rep2(rep['ap' + i])}</td></tr>`).join('')}</table>
+        <h3>IV – Évolution professionnelle et / ou mobilité</h3><b style="font-size:11.5px;">A – Souhaits du collaborateur</b>${area(rep.evoA)}<b style="font-size:11.5px;">B – Avis de la hiérarchie et échéance</b>${area(rep.evoB)}`;
+      total = `Note obtenue : <span style="color:${couleur(s.c.pct)};">${rzFmtPct(s.c.pct)}</span> &nbsp;·&nbsp; Palier : ${s.pr.palier ? rzEsc(s.pr.palier.nom) : 'aucun'} &nbsp;·&nbsp; Heures travaillées : ${s.heures} h &nbsp;·&nbsp; Prime : ${s.pr.montant === null ? '—' : fmEur(s.pr.montant)}`;
+    }
+    const win = window.open('', '_blank');
+    if(!win){ alert('Autorise les fenêtres pop-up pour exporter le PDF.'); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${rzEsc(FM_LAB[per])} — ${rzEsc(displayName(g.nom))}</title><style>
+        *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        body{ font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; padding:22px; font-size:12px; }
+        h1{ font-size:22px; margin:0; color:#fff; background:#1e5c3a; padding:14px 22px; border-radius:16px; }
+        .rule{ height:5px; background:#ffc72c; margin:9px 0 14px; border-radius:3px; }
+        p.sub{ margin:0 0 12px; color:#555; font-size:12px; }
+        .meta{ display:flex; gap:26px; flex-wrap:wrap; margin-bottom:10px; font-size:12.5px; }
+        h3{ font-size:13px; color:#fff; background:#1e5c3a; border-radius:10px; padding:7px 12px; margin:18px 0 6px; overflow:hidden; border-bottom:3px solid #ffc72c; }
+        table{ width:100%; border-collapse:collapse; page-break-inside:auto; } tr{ page-break-inside:avoid; }
+        td{ border:none; padding:6px 9px; vertical-align:top; } tr:nth-child(even) td{ background:#e8f1e8; }
+        td:first-child{ border-radius:8px 0 0 8px; } td:last-child{ border-radius:0 8px 8px 0; }
+        td.lc{ width:30%; font-style:italic; color:#444; } td.repc{ width:110px; text-align:center; font-weight:700; }
+        tr.h td{ background:transparent !important; color:#1e5c3a; font-weight:700; text-align:left; font-size:10.5px; text-transform:uppercase; border-bottom:1px solid #b9cdbd; border-radius:0; }
+        .r-OUI{ color:#1b7a3d; } .r-E{ color:#b86e00; } .r-NON{ color:#c0392b; } .r-none{ color:#888; }
+        .axcom{ margin:6px 0 0; padding:8px 12px; background:#fff4cc; border-left:4px solid #ffc72c; border-radius:8px; font-size:11.5px; font-style:italic; }
+        .total{ margin-top:18px; padding:12px 16px; border:2px solid #1e5c3a; border-radius:14px; background:#e8f1e8; font-size:15px; font-weight:700; }
+        .com{ margin:4px 0 8px; white-space:pre-wrap; border:1px solid #b9cdbd; border-radius:10px; padding:9px; min-height:34px; }
+        @media print { body{ padding:0; } }
+      </style></head><body>
+      <h1>${rzEsc(FM_LAB[per])} du formateur</h1><div class="rule"></div>
+      <p class="sub">${rzEsc(currentRestaurant)} · ${fmAnnee}</p>
+      <div class="meta"><span><b>Formateur :</b> ${rzEsc(displayName(g.nom))}</span><span><b>Date :</b> ${fmFr(dateV)}</span><span><b>Évalué par :</b> ${rzEsc(parV || '—')}</span></div>
+      ${corps}<div class="total">${total}</div>
+      <p style="font-size:10.5px;color:#666;">${rzEsc(fmLegend(form))}</p>
+      <b>Commentaires et engagement du collaborateur</b><div class="com">${rzEsc(comV)}</div>
+      <table style="margin-top:24px;"><tr><td style="background:none;">Signature du formateur / de la formatrice<br><br><br></td><td style="background:none;">Signature de l'évaluateur<br><br><br></td></tr></table>
+      </body></html>`);
+    win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
+  }
 
   async function initRzTab(){
     rzWrapProb.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Chargement…</p>';
@@ -6459,7 +6815,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       rzRecords = d.records || [];
       try{
         const g = await (await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody({ sheet:'get_grille_rz', targetRestaurant: currentRestaurant })) })).json();
-        if(g.ok && g.grilles) rzGrilles = { prob: g.grilles.prob || null, poste: g.grilles.poste || null };
+        if(g.ok && g.grilles) rzGrilles = { prob: g.grilles.prob || null, poste: g.grilles.poste || null, formateur: g.grilles.formateur || rzGrilles.formateur };
       } catch(e){ /* ancienne version du serveur : grille d'origine */ }
       renderRz();
     } catch(err){
