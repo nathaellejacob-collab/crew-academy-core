@@ -167,6 +167,8 @@
   .rz-sec-head h4{margin:0; font-size:13px; font-weight:800; color:var(--ink);}
   .rz-line{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 12px; border-top:1px solid var(--line); flex-wrap:wrap;}
   .rz-line-txt{flex:1 1 320px; font-size:12.5px; line-height:1.4; color:var(--ink);}
+  .rz-line-com{flex:1 1 100%; font:inherit; font-size:12px; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:#fff;}
+  .rz-line-com:disabled{background:#faf8f2; color:var(--ink);}
   .rz-opts{display:flex; gap:6px; flex-wrap:wrap;}
   .rz-opt input{position:absolute; opacity:0; pointer-events:none;}
   .rz-opt span{display:inline-block; font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer; user-select:none;}
@@ -1644,7 +1646,7 @@
   <div class="panel-block" id="rzTab">
     <div class="panel-head">
       <h3>🧭 Certification des responsables de zone</h3>
-      <p>Suivi de la certification de chaque RZ : <b>période probatoire</b> (jusqu'à 3 certifications, avec la moyenne des %) puis <b>en poste</b> (certification non annoncée par semestre, avec la prime). Le bouton « 📝 Grille » ouvre la grille d'évaluation : le % est calculé tout seul et reporté dans le suivi.</p>
+      <p>Suivi de la certification de chaque RZ : <b>période probatoire</b> (jusqu'à 3 certifications, avec la moyenne des %) puis <b>en poste</b> (deux certifications non annoncées par semestre, avec la prime). Le bouton « 📝 Grille » ouvre la grille d'évaluation : le % est calculé tout seul et reporté dans le suivi. Une fois la grille remplie, « 👁️ Consulter » la rouvre et permet de l'exporter en PDF pour la transmettre au RZ.</p>
     </div>
     <div id="rzSummary"></div>
     <form id="rzAddForm" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
@@ -2832,7 +2834,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
             + sub('Deux situations')
             + list([
               '<strong>Période probatoire</strong> : jusqu\'à 3 certifications (date + % obtenu). La <strong>moyenne</strong> des % est calculée automatiquement ; elle passe au vert à partir de 80 %.',
-              '<strong>En poste</strong> : une certification non annoncée par semestre (date, %, évaluateur). La <strong>prime</strong> se calcule selon le % : 80 % = 100 €, 85 % = 125 €, 90 % = 150 €, 95 % = 175 €, 98 % et plus = 200 €.',
+              '<strong>En poste</strong> : deux certifications non annoncées par semestre (date, %, évaluateur). La <strong>prime</strong> se calcule selon le % : 80 % = 100 €, 85 % = 125 €, 90 % = 150 €, 95 % = 175 €, 98 % et plus = 200 €.',
             ])
             + sub('Utiliser l\'onglet')
             + steps([
@@ -5924,9 +5926,9 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
 
   // ---------------- Certification des responsables de zone (RZ) ----------------
   const RZ_FORMS = {"prob": [{"titre": "Qualités et aptitudes attendues", "lignes": ["Il/elle a toujours une présentation professionnelle propre et soignée", "Il/elle est exigent et encourage les employés sous sa supervision", "il/elle a été formé à la sécurité alimentaire (DSA et beef intégrity)", "Il/elle crée du dynamisme sur ses quarts de travail.", "Il/elle a une communication adaptée en fonction de la situation (participative ou directive)", "Il/elle donne systématiquement du feadback aux employés à leur arrivée et leur départ", "Il/ellePrend des initiatives dans certaines situations", "S’adapte aux situations inatendues, il/elle sait gérer son stress", "Il/elle a une vraie culture service (contact facile avec les clients, tours de contrôle réguliers en salle, propreté du restaurant, alentours et des toilettes)"]}, {"titre": "Activité : Prépa quart", "lignes": ["Les DLC ont été vérifiées sur la zone (horloge de tracabilité et la feuille prévue à cet effet)", "Utilise la prépa rush pour garantir un bon de niveau de stock (produits frais, congelés et secs)", "Il/elle fait en sorte que la zone soit propre", "Il/elle fait en sorte que l'aseptisation soit en place : Chiffons en quantité suffisante, un chiffon à chaque poste de production, que les seaux à chiffons soient vérifiés et timés.", "Il/elle s'assure que le niveau ReUse soit cohérent avec les besoins", "Il/elle fixe des objectifs ciblés aux formateurs présents sur le rush ou se fixe à lui-même des objectifs ciblés de formation et le partage lors du brief rush", "Il/elle prépare les tiroirs en ligne frit en fonction des niveaux ou que les sirops de la shake sont bien calibrés", "Il/elle a préparé son brief avec le manager"]}, {"titre": "Activité : Gestion de la zone / Cuisine", "lignes": ["Il/elle prépare le tempering ou verifie que le tempering soit bien en place", "Communique en permanence avec les équipiers pour dynamiser la zone", "Il/elle fait respecter les normes par chacun afin de maintenir un haut niveau de sécurité alimentaire et de propreté en cuisine (timers en cuisine,etc….)", "S'assure que le nettoyage au fur et à mesure soit respecter pendant le rush", "Fait preuve de leadership et de dynamisme pour booster la cuisine", "S'assure que tous les équipements fonctionnent et signale toute annomalie", "Il/elle fait de la reconnaissance positive et constructive tout au long du rush", "Il/elle communique éfficacement avec le manager sur sa prise de décisions afin d'aller chercher la performance en cuisine et fait créé le lien avec la zone comptoir", "Culture service : Il/elle s'assure que les produits soient bien emballés, pas plus de 6 produits/plateau et qu'ils soient propres. Les picks listes sont bien collés et visibles. Set à plateaux sur place.", "Il/elle s'assure que la montée et la baisse des niveaux soient respectés en donnant des directives précises", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses."]}, {"titre": "Activité : Gestion de la zone / Comptoir", "lignes": ["Il/elle a une réel capacité d'entrain et de leadership pour booster le comptoir", "Il/elle s'assure que les plateaux envoyés en SAT sont bien présentés et que les sacs des commandes drive ne contiennent pas plus que le nombre de produit recommandé.", "Effectue des tours de contrôle : toilettes, lobby et exterieurs au minimum 4 fois sur le rush (1h)", "Observe les zones de danger et prend les décisions afin d'améliorer le service", "Prend en charge les clients au comptoir et s'assure que les équipiers le fasse aussi", "Communique éfficacement avec le manager sur sa prise de décisions", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses.", "Développe son relationnel client et sa présence en salle afin d'atteindre le niveau 4", "S'assure que les ballons soient en place et que les happy meals soient en quantité suffisante", "Il/elle s'assure que la prise de commande efficace soit respectée et que les employés appliquent la cutlure service à l'enlevement."]}, {"titre": "Activité : Post quart", "lignes": ["Maintient un haut de niveau de service et/ou de production", "Donne les tâches aux équipiers (propretée, niveau des stocks et sécurité alimentaire)", "S'assure que les pertes (vides/complétes) soient corretement notées", "Occasionnellement il/elle peut être amené à procéder au comptage des caisses", "S'assure de la propreté de la salle", "Debriefing du rush avec le manager (point sur les objectifs ciblés de formation et de gestion de zone)"]}, {"titre": "Activité : hors gestion de zone", "lignes": ["Il/elle fait maintenir un haut de niveau de service et/ou de production avec les équipers présents sur la zone", "Priorise les tâches après rush : sécurité alimentaire et propreté (zone cuisine : cuisine et arrière cuisine) (zone comptoir : comptoir et salle)", "S'assure que les pertes (vides/complétes) ont été notées", "Il/elle réalise un feedback à chaque équipier qui quitte sa zone", "Demande un feedback au manager de shift sur sa gestion de zone"]}], "poste": [{"titre": "Aptitudes attendues", "lignes": ["Il/elle a toujours une présentation professionnelle propre et soignée", "Il/elle est exigent et encourage les employés sous sa supervision", "Il/elle fait respecter les normes et les procédures sur la zone ou il/elle est posté (e)", "Il/elle crée du dynamisme sur ses quarts de travail.", "Il/elle a une communication adaptée en fonction de la situation (participative ou directive)", "Il/elle donne systématiquement du feadback aux employés à leur arrivée et leur départ", "Il/elle prend des initiatives dans certaines situations", "il/elle maitrise la sécurité alimentaire (DSA et beef intégrity)", "S’adapte aux situations inatendues, il/elle sait gérer son stress", "Il/elle a une vraie culture service (contact facile avec les clients, tours de contrôle réguliers en salle, propreté du restaurant, alentours et des toilettes)"]}, {"titre": "Activité : Prépa quart", "lignes": ["Les DLC ont été vérifiées sur la zone (horloge de tracabilité et la feuille prévue à cet effet)", "Utilise la prépa rush pour garantir un bon de niveau de stock (produits frais, congelés et secs)", "Il/elle fait en sorte que la zone soit propre", "Il/elle fait en sorte que l'aseptisation soit en place : Chiffons en quantité suffisante, un chiffon à chaque poste de production, que les seaux à chiffons soient vérifiés et timés.", "Il/elle s'assure que le niveau ReUse soit cohérent avec les besoins", "Il/elle fixe des objectifs ciblés aux formateurs présents sur le rush ou se fixe à lui-même des objectifs ciblés de formation et le partage lors du brief rush", "Il/elle prépare les tiroirs en ligne frit en fonction des niveaux ou que les sirops de la shake sont bien calibrés", "Il/elle a préparé son brief avec le manager"]}, {"titre": "Activité : Gestion de la zone / Cuisine", "lignes": ["Il/elle prépare le tempering ou verifie que le tempering soit bien en place", "Communique en permanence avec les équipiers pour dynamiser la zone", "Il/elle fait respecter les normes par chacun afin de maintenir un haut niveau de sécurité alimentaire et de propreté en cuisine (timers en cuisine,etc….)", "S'assure que le nettoyage au fur et à mesure soit respecter pendant le rush", "Fait preuve de leadership et de dynamisme pour booster la cuisine", "S'assure que tous les équipements fonctionnent et signale toute annomalie", "Il/elle fait de la reconnaissance positive et constructive tout au long du rush", "Il/elle communique éfficacement avec le manager sur sa prise de décisions afin d'aller chercher la performance en cuisine et fait créé le lien avec la zone comptoir", "Culture service : Il/elle s'assure que les produits soient bien emballés, pas plus de 6 produits/plateau et qu'ils soient propres. Les picks listes sont bien collés et visibles. Set à plateaux sur place.", "Il/elle s'assure que la montée et la baisse des niveaux soient respectés en donnant des directives précises", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses."]}, {"titre": "Activité : Gestion de la zone / Comptoir", "lignes": ["Il/elle a une réel capacité d'entrain et de leadership pour booster le comptoir", "Il/elle s'assure que les plateaux envoyés en SAT sont bien présentés et que les sacs des commandes drive ne contiennent pas plus que le nombre de produit recommandé.", "Effectue des tours de contrôle : toilettes, lobby et exterieurs au minimum 4 fois sur le rush (1h)", "Observe les zones de danger et prend les décisions afin d'améliorer le service", "Prend en charge les clients au comptoir et s'assure que les équipiers le fasse aussi", "Communique éfficacement avec le manager sur sa prise de décisions", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses.", "Développe son relationnel client et sa présence en salle afin d'atteindre le niveau 4", "S'assure que les ballons soient en place et que les happy meals soient en quantité suffisante", "Il/elle s'assure que la prise de commande efficace soit respectée et que les employés appliquent la cutlure service à l'enlevement."]}, {"titre": "Activité : Post quart", "lignes": ["Il/elle fait maintenir un haut de niveau de service et/ou de production avec les équipers présents sur la zone", "Priorise les tâches après rush : sécurité alimentaire et propreté (zone cuisine : cuisine et arrière cuisine) (zone comptoir : comptoir et salle)", "S'assure que les pertes (vides/complétes) ont été notées", "Il/elle réalise un feedback à chaque équipier qui quitte sa zone", "Demande un feedback au manager de shift sur sa gestion de zone"]}], "prereq": "PRE-REQUIS A LA CERTIFICATION DU RESPONSABLE DE ZONE :Le futur responsable de zone doit avoir été certifié formateur. Le directeur du restaurant aura observé le formateur sur le terrain, en situation de maîtrise des process et avoir validé ses compétences de leadership. Les modules responsable de zone doivent être validés sur HU ONLINE."};
-  const RZ_SLOT_LABELS = {c1:'Certification 1', c2:'Certification 2', c3:'Certification 3', s1:'1er semestre', s2:'2e semestre'};
+  const RZ_SLOT_LABELS = {c1:'Certification 1', c2:'Certification 2', c3:'Certification 3', s1:'1er semestre — certif. 1', s3:'1er semestre — certif. 2', s2:'2e semestre — certif. 1', s4:'2e semestre — certif. 2'};
   const RZ_PROB_SLOTS = ['c1','c2','c3'];
-  const RZ_POSTE_SLOTS = ['s1','s2'];
+  const RZ_POSTE_SLOTS = ['s1','s3','s2','s4'];
   let rzRecords = [];
   const rzWrapProb = document.getElementById('rzWrapProb');
   const rzWrapPoste = document.getElementById('rzWrapPoste');
@@ -5999,7 +6001,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       <input type="date" class="certif-input rz-in" data-nom="${nom}" data-champ="${slot}Date" value="${rzEsc(rec[slot + 'Date'])}">
       <span class="rz-pct"><input type="number" min="0" max="100" step="0.1" class="certif-input rz-in rz-pct-in" data-nom="${nom}" data-champ="${slot}Pct" value="${rzEsc(rec[slot + 'Pct'])}" placeholder="—"> %</span>
       ${enPoste ? `<input type="text" class="certif-input rz-in rz-par-in" data-nom="${nom}" data-champ="${slot}Par" value="${rzEsc(rec[slot + 'Par'])}" placeholder="Par qui ?" maxlength="80">` : ''}
-      <button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${slot}" data-tip="Ouvrir la grille d'évaluation">📝 Grille</button>
+      <button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${slot}" data-tip="Ouvrir la grille d'évaluation pour la remplir ou la modifier">📝 Grille</button>
+      ${p !== null ? `<button type="button" class="rz-grid-btn rz-view-btn" data-nom="${nom}" data-slot="${slot}" data-view="1" data-tip="Consulter la grille remplie et l'exporter en PDF">👁️ Consulter</button>` : ''}
       ${p !== null ? `<span class="action-pill ${rzCls(p)}" style="margin-top:4px;">${rzFmtPct(p)}</span>` : ''}${primeTxt}
     </div>`;
   }
@@ -6039,8 +6042,10 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       ? '<p style="color:var(--ink-soft);font-size:13px;">Aucun RZ en poste.</p>'
       : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
           <th>Responsable de zone</th><th data-tip="Repasser un RZ en « Probatoire » si besoin">Statut</th>
-          <th data-tip="Certification non annoncée du 1er semestre : date, % obtenu, évaluateur. La prime en découle.">1er semestre</th>
-          <th data-tip="Certification non annoncée du 2e semestre : date, % obtenu, évaluateur. La prime en découle.">2e semestre</th><th></th></tr></thead><tbody>
+          <th data-tip="1re certification non annoncée du 1er semestre : date, % obtenu, évaluateur. La prime en découle.">1er semestre<br>certif. 1</th>
+          <th data-tip="2e certification non annoncée du 1er semestre : date, % obtenu, évaluateur. La prime en découle.">1er semestre<br>certif. 2</th>
+          <th data-tip="1re certification non annoncée du 2e semestre : date, % obtenu, évaluateur. La prime en découle.">2e semestre<br>certif. 1</th>
+          <th data-tip="2e certification non annoncée du 2e semestre : date, % obtenu, évaluateur. La prime en découle.">2e semestre<br>certif. 2</th><th></th></tr></thead><tbody>
           ${poste.map(rec => `<tr><td><b>${displayName(rec.nom)}</b></td><td>${rzTypeSelect(rec)}</td>
               ${RZ_POSTE_SLOTS.map(s => `<td>${rzSlotCell(rec, s, true)}</td>`).join('')}${rzDel(rec)}</tr>`).join('')}</tbody></table></div>`;
 
@@ -6048,7 +6053,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       inp.addEventListener('change', () => { inp.disabled = true; rzAppel({sheet:'update_certification_rz', nom: inp.dataset.nom, champs: {[inp.dataset.champ]: inp.value}}); });
     });
     document.getElementById('rzTab').querySelectorAll('.rz-grid-btn').forEach(btn => {
-      btn.addEventListener('click', () => rzOpenGrid(btn.dataset.nom, btn.dataset.slot));
+      btn.addEventListener('click', () => rzOpenGrid(btn.dataset.nom, btn.dataset.slot, btn.dataset.view === '1'));
     });
     document.getElementById('rzTab').querySelectorAll('.rz-delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -6083,11 +6088,12 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
 
   // ---- Grille d'évaluation ----
   let rzGrid = null; // {nom, slot, kind, rep}
-  async function rzOpenGrid(nom, slot){
+  async function rzOpenGrid(nom, slot, readonly){
+    const ro = !!readonly;
     const rec = rzRecords.find(r => r.nom === nom);
     if(!rec) return;
     const kind = slot[0] === 'c' ? 'prob' : 'poste';
-    rzGrid = { nom, slot, kind, rep: {} };
+    rzGrid = { nom, slot, kind, rep: {}, ro, ev: null };
     let ev = null;
     try{
       const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
@@ -6097,6 +6103,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       ev = d.evaluation;
     } catch(err){ alert('Erreur : ' + err.message); return; }
     rzGrid.rep = (ev && ev.reponses) || {};
+    rzGrid.ev = ev;
     const today = new Date(); today.setHours(0,0,0,0);
     const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     const dateInit = (ev && ev.date) || rec[slot + 'Date'] || iso(today);
@@ -6110,22 +6117,26 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       ${kind === 'prob' ? `<p class="rz-prereq"><b>Pré-requis :</b> ${rzEsc(RZ_FORMS.prereq)}</p>` : ''}
       <div class="rz-head-fields">
         <label>RZ<input type="text" value="${rzEsc(displayName(nom))}" disabled></label>
-        <label>Date de la certification<input type="date" id="rzGridDate" value="${rzEsc(dateInit)}"></label>
-        <label>Certifié par<input type="text" id="rzGridPar" value="${rzEsc(parInit)}" maxlength="80" placeholder="Nom de l'évaluateur"></label>
+        <label>Date de la certification<input type="date" id="rzGridDate" value="${rzEsc(dateInit)}"${ro ? ' disabled' : ''}></label>
+        <label>Certifié par<input type="text" id="rzGridPar" value="${rzEsc(parInit)}" maxlength="80" placeholder="Nom de l'évaluateur"${ro ? ' disabled' : ''}></label>
       </div>
       ${secs.map((s, si) => `<div class="rz-sec"><div class="rz-sec-head"><h4>${rzEsc(s.titre)}</h4><span class="action-pill gray" id="rzSecPct${si}">—</span></div>
         ${s.lignes.map((l, li) => `<div class="rz-line"><div class="rz-line-txt">${rzEsc(l)}</div><div class="rz-opts">
-          ${opts.map(([val, lab]) => `<label class="rz-opt rz-opt-${val}"><input type="radio" name="rz_${si}_${li}" value="${val}" data-k="${si}-${li}"${rzGrid.rep[si + '-' + li] === val ? ' checked' : ''}><span>${lab}</span></label>`).join('')}
-        </div></div>`).join('')}</div>`).join('')}
-      <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires<textarea id="rzGridComment" rows="3" style="display:block;width:100%;margin-top:4px;font:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:8px;">${rzEsc((ev && ev.commentaire) || '')}</textarea></label>
+          ${opts.map(([val, lab]) => `<label class="rz-opt rz-opt-${val}"><input type="radio" name="rz_${si}_${li}" value="${val}" data-k="${si}-${li}"${rzGrid.rep[si + '-' + li] === val ? ' checked' : ''}${ro ? ' disabled' : ''}><span>${lab}</span></label>`).join('')}
+        </div>
+        <input type="text" class="rz-line-com" data-c="${si}-${li}" value="${rzEsc(rzGrid.rep['c' + si + '-' + li] || '')}" maxlength="300" placeholder="Commentaire"${ro ? ' disabled' : ''}></div>`).join('')}</div>`).join('')}
+      <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires<textarea id="rzGridComment" rows="3"${ro ? ' disabled' : ''} style="display:block;width:100%;margin-top:4px;font:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:8px;">${rzEsc((ev && ev.commentaire) || '')}</textarea></label>
       <div class="rz-total" id="rzTotal"></div>
       <div class="modal-error" id="rzGridError" style="display:none;"></div>
-      <div class="modal-actions"><button type="button" id="rzGridCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">Annuler</button><button type="button" id="rzGridSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button></div>`;
+      <div class="modal-actions"><button type="button" id="rzGridCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="rzGridPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button>${ro ? '<button type="button" id="rzGridEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="rzGridSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
     document.getElementById('rzGridTitle').textContent = 'Grille — ' + displayName(nom);
     rzGridModal.style.display = '';
     rzGridModal.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', () => { rzGrid.rep[r.dataset.k] = r.value; rzGridRefresh(); }));
+    rzGridModal.querySelectorAll('.rz-line-com').forEach(i => i.addEventListener('input', () => { rzGrid.rep['c' + i.dataset.c] = i.value; }));
     document.getElementById('rzGridCancel').addEventListener('click', rzCloseGrid);
-    document.getElementById('rzGridSave').addEventListener('click', rzSaveGrid);
+    document.getElementById('rzGridPdf').addEventListener('click', rzGridPdf);
+    if(ro){ document.getElementById('rzGridEdit').addEventListener('click', () => rzOpenGrid(nom, slot, false)); }
+    else { document.getElementById('rzGridSave').addEventListener('click', rzSaveGrid); }
     rzGridRefresh();
   }
   function rzGridRefresh(){
@@ -6137,6 +6148,54 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const prime = rzGrid.kind === 'poste' ? rzPrime(total) : null;
     document.getElementById('rzTotal').innerHTML = `<span>Résultat de la certification</span> <span class="action-pill ${rzCls(total)}" style="font-size:15px;">${rzFmtPct(total)}</span>${prime !== null ? ` <span>· Prime : <b>${prime} €</b></span>` : ''}
       <span class="certif-sub" style="display:inline;margin-left:8px;">Vert ≥ 80 % · orange 71–79 % · rouge ≤ 70 %</span>`;
+  }
+
+  // Version imprimable / PDF de la grille (état affiché à l'écran) pour la transmettre au RZ.
+  function rzGridPdf(){
+    if(!rzGrid) return;
+    const kind = rzGrid.kind, secs = RZ_FORMS[kind];
+    const { parSection, total } = rzCalc(kind, rzGrid.rep);
+    const prime = kind === 'poste' ? rzPrime(total) : null;
+    const lib = { V:'Validé', E:'En cours', N:'Non acquis', X:'Non évalué', OUI:'OUI', NON:'NON', SO:'SO' };
+    const couleur = n => n === null ? '#888' : (n >= 80 ? '#1b7a3d' : (n >= 71 ? '#b86e00' : '#c0392b'));
+    const fr = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : '—'; };
+    const dateV = (document.getElementById('rzGridDate') || {}).value;
+    const parV = ((document.getElementById('rzGridPar') || {}).value || '').trim();
+    const comV = ((document.getElementById('rzGridComment') || {}).value || '').trim();
+    const corps = secs.map((s, si) => `<h3>${rzEsc(s.titre)} <span style="color:${couleur(parSection[si])};float:right;">${rzFmtPct(parSection[si])}</span></h3>
+      <table><tr class="h"><td>Critère</td><td>Évaluation</td><td>Commentaire</td></tr>${s.lignes.map((l, li) => { const v = rzGrid.rep[si + '-' + li]; return `<tr><td>${rzEsc(l)}</td><td class="rep r-${v || 'none'}">${v ? lib[v] : '—'}</td><td class="lc">${rzEsc(rzGrid.rep['c' + si + '-' + li] || '')}</td></tr>`; }).join('')}</table>`).join('');
+    const win = window.open('', '_blank');
+    if(!win){ alert('Autorise les fenêtres pop-up pour exporter le PDF.'); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Certification RZ — ${rzEsc(displayName(rzGrid.nom))} — ${rzEsc(RZ_SLOT_LABELS[rzGrid.slot])}</title>
+      <style>
+        body{ font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; padding:22px; font-size:12px; }
+        h1{ font-size:19px; margin:0 0 2px; color:#c0392b; }
+        p.sub{ margin:0 0 12px; color:#555; font-size:12px; }
+        .meta{ display:flex; gap:24px; flex-wrap:wrap; margin-bottom:10px; font-size:12.5px; }
+        h3{ font-size:13px; background:#f2f0e8; padding:6px 8px; margin:14px 0 0; overflow:hidden; }
+        table{ width:100%; border-collapse:collapse; page-break-inside:auto; }
+        tr{ page-break-inside:avoid; }
+        td{ border:1px solid #ddd; padding:4px 7px; vertical-align:top; }
+        td.lc{ width:30%; font-style:italic; color:#444; } tr.h td{ background:#eee; font-weight:700; text-align:left; }
+        td.rep{ width:90px; text-align:center; font-weight:700; }
+        .r-V,.r-OUI{ color:#1b7a3d; } .r-E{ color:#b86e00; } .r-N,.r-NON{ color:#c0392b; } .r-X,.r-SO,.r-none{ color:#888; }
+        .total{ margin-top:16px; padding:10px; border:2px solid #1a1a1a; font-size:15px; font-weight:700; }
+        .com{ margin-top:12px; white-space:pre-wrap; border:1px solid #ddd; padding:8px; min-height:30px; }
+        .prereq{ font-size:11px; color:#555; margin:6px 0; }
+        @media print { body{ padding:0; } }
+      </style></head><body>
+      <h1>Certification responsable de zone</h1>
+      <p class="sub">${rzEsc(currentRestaurant)} · ${kind === 'prob' ? 'Période probatoire' : 'Certification non annoncée — en poste'} · ${rzEsc(RZ_SLOT_LABELS[rzGrid.slot])}</p>
+      <div class="meta"><span><b>RZ :</b> ${rzEsc(displayName(rzGrid.nom))}</span><span><b>Date :</b> ${fr(dateV)}</span><span><b>Certifié par :</b> ${rzEsc(parV || '—')}</span></div>
+      ${kind === 'prob' ? `<p class="prereq"><b>Pré-requis :</b> ${rzEsc(RZ_FORMS.prereq)}</p>` : ''}
+      ${corps}
+      <div class="total">Résultat de la certification : <span style="color:${couleur(total)};">${rzFmtPct(total)}</span>${prime !== null ? ` &nbsp;·&nbsp; Prime : ${prime} €` : ''}</div>
+      <p style="font-size:10.5px;color:#666;">Vert ≥ 80 % · orange 71–79 % · rouge ≤ 70 %</p>
+      <b>Commentaires</b><div class="com">${rzEsc(comV)}</div>
+      </body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 300);
   }
   function rzCloseGrid(){ rzGridModal.style.display = 'none'; rzGrid = null; }
   document.getElementById('rzGridClose').addEventListener('click', rzCloseGrid);
@@ -8428,4 +8487,3 @@ const APPS_SCRIPT_URL = '__APPS_SCRIPT_URL__';
 
 </body>
 </html>
-
