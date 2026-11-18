@@ -155,18 +155,18 @@
   .rz-par-in{max-width:130px !important;}
   .rz-grid-btn{appearance:none; border:1px solid var(--line); background:#faf9f4; color:var(--navy-2); font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:999px; cursor:pointer;}
   .rz-grid-btn:hover{background:#f0ede2;}
+  .rz-slot{display:flex; flex-direction:column; align-items:center; gap:5px;}
+  .rz-res{display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:center;}
+  .rz-big{font-size:15px !important; padding:4px 12px !important;}
+  .rz-prime{font-size:12px; font-weight:800; color:var(--navy-2); background:#faf9f4; border:1px solid var(--line); border-radius:999px; padding:3px 9px;}
+  .rz-meta,.rz-none{font-size:11.5px; color:var(--ink-soft);} .rz-none{font-style:italic;}
+  .rz-actions{display:flex; gap:5px; flex-wrap:wrap; justify-content:center;}
+  .rz-edit{font-size:11px; color:var(--ink-soft);} .rz-edit summary{cursor:pointer; text-align:center; list-style:none; opacity:.7;} .rz-edit summary:hover{opacity:1; text-decoration:underline;}
+  .rz-edit[open]{display:flex; flex-direction:column; gap:4px; align-items:center;}
   #rzTab table.matrix-table thead th, #rzTab table.matrix-table td{text-align:center; vertical-align:middle;}
   .rz-block-title{font-size:15px; font-weight:800; margin:22px 0 10px; color:var(--ink);}
   .rz-block-title span{color:var(--ink-soft); font-weight:600; font-size:13px;}
   .rz-plan-row-late td{background:#fdf0ee;} .rz-plan-row-done td{color:var(--ink-soft);}
-  .rz-kpi-btn{font:inherit; cursor:pointer; text-align:center; background:#fff; border:1px solid var(--line);} .rz-kpi-btn.active{outline:2px solid var(--navy);}
-  .rz-bubbles{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:10px;}
-  .rz-bubble{border:1px solid var(--line); border-left:7px solid #8a8f98; border-radius:12px; background:#fff; overflow:hidden;}
-  .rz-bubble.open{grid-column:1 / -1;}
-  .rz-b-retard{border-left-color:var(--red);} .rz-b-aplanifier{border-left-color:var(--amber);} .rz-b-planifie{border-left-color:#8a8f98;} .rz-b-fait{border-left-color:var(--green);}
-  .rz-bubble-head{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px 14px; cursor:pointer; width:100%; background:none; border:none; font:inherit; text-align:left;}
-  .rz-bubble-head b{font-size:14px; color:var(--ink);} .rz-bubble-pills{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
-  .rz-bubble-body{display:none; padding:0 12px 12px;} .rz-bubble.open .rz-bubble-body{display:block;}
   .rz-head-fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin:10px 0 6px;}
   .rz-head-fields label{font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block;}
   .rz-head-fields input{display:block; width:100%; margin-top:4px; font:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;}
@@ -186,6 +186,31 @@
   .rz-opt-E input:checked + span{background:var(--amber-dark);}
   .rz-opt-N input:checked + span, .rz-opt-NON input:checked + span{background:var(--red);}
   .rz-opt-X input:checked + span, .rz-opt-SO input:checked + span{background:#8a8f98;}
+  /* ---- Style des grilles de certification (vert foncé, filet jaune, lignes zébrées) ---- */
+  #rzEdTitle,#rzGridTitle{background:#1e5c3a; color:#fff; padding:12px 20px; border-radius:14px; flex:1; font-size:20px;}
+  #rzEditModal .modal-card > div:first-child,#rzGridModal .modal-card > div:first-child{border-bottom:4px solid #ffc72c; padding-bottom:10px; margin-bottom:10px; align-items:center;}
+  .rz-sec{border:none; border-radius:0; margin-top:20px; overflow:visible;}
+  .rz-sec-head{background:#1e5c3a; border-radius:12px; padding:10px 16px; box-shadow:0 4px 0 #ffc72c; margin-bottom:12px;}
+  .rz-sec-head h4{color:#fff; font-size:14px;} .rz-sec-head .action-pill{background:#fff;}
+  .rz-line{border-top:none; border-radius:10px; padding:9px 14px;}
+  .rz-sec > .rz-line:nth-child(odd){background:#e8f1e8;}
+  .rz-line-com{border:none; border-bottom:1px solid #b9cdbd; border-radius:0; background:transparent;}
+  .rz-opt span{min-width:34px; height:30px; padding:0 9px; display:inline-flex; align-items:center; justify-content:center; border:1.5px solid #1e5c3a; color:#1e5c3a; background:#fff;}
+  .rz-axe-wrap{padding:4px 14px 0;} .rz-axe-com{width:100%; font:inherit; font-size:12px; padding:8px 10px; border:1px solid #ffc72c; border-radius:8px; background:#fffbea;} .rz-axe-com:disabled{color:var(--ink);}
+  .rz-total{border:2px solid #1e5c3a; border-radius:12px; background:#e8f1e8;}
+  .rz-coef{display:inline-block; font-size:10.5px; font-weight:800; color:#1e5c3a; background:#fff4cc; border:1px solid #ffc72c; border-radius:999px; padding:1px 8px; margin-left:6px; vertical-align:middle;}
+  .rz-sec-head .rz-coef{background:#ffc72c; color:#1e2a38; border-color:#ffc72c;}
+  .rz-gridtools{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 10px;}
+  .rz-ed-lab{display:block; font-size:11.5px; font-weight:700; color:var(--ink-soft);} .rz-ed-lab textarea{display:block; width:100%; margin-top:4px; font:inherit; font-size:12.5px; padding:8px; border:1px solid var(--line); border-radius:8px;}
+  .rz-ed-sec{margin-top:16px; border:1px solid #b9cdbd; border-radius:14px; padding:10px; background:#fff;}
+  .rz-ed-sec-head,.rz-ed-line{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+  .rz-ed-sec-head{background:#1e5c3a; border-radius:10px; padding:8px 10px; box-shadow:0 3px 0 #ffc72c; margin-bottom:12px;}
+  .rz-ed-sec-head .rz-ed-in{font-weight:800;} .rz-ed-sec-head .rz-ed-coef,.rz-ed-sec-head .rz-ed-share{color:#fff;}
+  .rz-ed-line:nth-child(even){background:#e8f1e8; border-radius:8px;} .rz-ed-line{padding:4px 6px;}
+  .rz-ed-in{font:inherit; font-size:12.5px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink);}
+  input.rz-ed-in[type=text]{flex:1 1 260px; min-width:0;} input.rz-ed-in[type=number]{width:64px;}
+  .rz-ed-coef{font-size:11.5px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; gap:4px;} .rz-ed-share{font-size:11px; color:var(--ink-soft); min-width:78px;}
+  .rz-ed-btns{display:flex; gap:3px;} .rz-ed-btns button{appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; padding:4px 8px; font-size:12px;} .rz-ed-btns button:hover{background:#f0ede2;} .rz-ed-btns button:disabled{opacity:.35; cursor:default;}
   .rz-total{position:sticky; bottom:-22px; z-index:2; background:var(--panel); border-top:2px solid var(--line); padding:10px 4px 24px; margin-top:14px; font-size:13px; font-weight:700; display:flex; flex-wrap:wrap; align-items:center; gap:8px;}
 
   /* ---------- RESTAURANT BAR ---------- */
@@ -1664,6 +1689,7 @@
       <select id="rzAddType" style="font:inherit; font-size:13px; padding:7px 10px; border:1px solid var(--line); border-radius:8px;"><option value="probatoire">Période probatoire</option><option value="en_poste">En poste</option></select>
       <button type="submit" class="restriction-toggle-btn" style="margin-bottom:0;">➕ Ajouter</button>
     </form>
+    <div class="rz-gridtools"><span class="certif-sub" style="display:inline;margin:0;">Grilles d'évaluation :</span><button type="button" class="rz-grid-btn" id="rzEditProb">⚙️ Modifier la grille probatoire</button><button type="button" class="rz-grid-btn" id="rzEditPoste">⚙️ Modifier la grille en poste</button></div>
     <h4 class="rz-block-title">📅 Planning des certifications <span id="rzPlanCount"></span></h4>
     <div id="rzPlanBar" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"></div>
     <div id="rzWrapPlan"></div>
@@ -1673,6 +1699,19 @@
     <div id="rzWrapPoste"></div>
   </div>
 </section>
+
+<div class="modal-overlay" id="rzEditModal" style="display:none;">
+  <div class="modal-card modal-card-wide" style="max-width:980px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+      <h3 id="rzEdTitle" style="margin-bottom:2px;">Modifier la grille</h3>
+      <button type="button" id="rzEdClose" style="appearance:none; border:none; background:none; font-size:20px; cursor:pointer; color:var(--ink-soft); line-height:1;">✕</button>
+    </div>
+    <p class="modal-sub">Renomme, ajoute ou supprime les axes et les critères, et règle leur coefficient (1 = poids normal, 2 = compte double, 0 = ne compte pas). Les certifications déjà réalisées gardent la grille et les coefficients utilisés le jour où elles ont été faites.</p>
+    <div id="rzEdBody"></div>
+    <div class="modal-error" id="rzEdError" style="display:none;"></div>
+    <div class="modal-actions"><button type="button" id="rzEdReset" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);margin-right:auto;">↺ Grille d'origine</button><button type="button" id="rzEdCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">Annuler</button><button type="button" id="rzEdSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer la grille</button></div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="rzGridModal" style="display:none;">
   <div class="modal-card modal-card-wide" style="max-width:900px;">
@@ -5970,23 +6009,39 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   //  - Période probatoire : Validé = 1, En cours = 0,5, Non acquis = 0 ; « Non évalué » sort du calcul ; une ligne non remplie compte 0.
   //  - En poste : OUI = 1, NON = 0 ; « SO » sort du calcul ; une ligne non remplie n'est pas comptée.
   //  Le résultat d'une grille = moyenne des % de ses rubriques.
-  function rzCalc(kind, rep){
-    const secs = RZ_FORMS[kind];
+  // ---- Grilles modifiables (axes, critères, coefficients) ----
+  //  Sans modification, la grille est celle des fichiers Excel de la direction (tous les coefficients = 1).
+  //  Section % = moyenne pondérée (coef. des critères) ; total = moyenne pondérée (coef. des axes) des % de rubriques.
+  let rzGrilles = { prob: null, poste: null };
+  const rzNumFmt = n => String(Math.round(n * 100) / 100).replace('.', ',');
+  const rzCoefBadge = c => c === 1 ? '' : ` <span class="rz-coef">coef. ${rzNumFmt(c)}</span>`;
+  function rzDefaultForm(kind){
+    return { prereq: kind === 'prob' ? (RZ_FORMS.prereq || '') : '', sections: RZ_FORMS[kind].map(s => ({ titre: s.titre, coef: 1, lignes: s.lignes.map(t => ({ t, c: 1 })) })) };
+  }
+  function rzNormForm(f, kind){
+    if(!f || !Array.isArray(f.sections) || !f.sections.length) return rzDefaultForm(kind);
+    const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n >= 0 ? n : 1; };
+    return { prereq: String(f.prereq || ''), sections: f.sections.map(s => ({ titre: String(s.titre || ''), coef: num(s.coef), lignes: (s.lignes || []).map(l => typeof l === 'string' ? { t: l, c: 1 } : { t: String(l.t || ''), c: num(l.c) }) })) };
+  }
+  const rzCurrentForm = kind => rzNormForm(rzGrilles[kind], kind);
+  function rzCalc(kind, rep, form){
+    const secs = (form || rzCurrentForm(kind)).sections;
     const parSection = secs.map((s, si) => {
       let num = 0, den = 0;
-      s.lignes.forEach((_, li) => {
-        const v = rep[si + '-' + li];
+      s.lignes.forEach((l, li) => {
+        const v = rep[si + '-' + li], w = l.c;
         if(kind === 'prob'){
           if(v === 'X') return;
-          den++; num += v === 'V' ? 1 : v === 'E' ? 0.5 : 0;
+          den += w; num += w * (v === 'V' ? 1 : v === 'E' ? 0.5 : 0);
         } else {
-          if(v === 'OUI'){ num++; den++; } else if(v === 'NON'){ den++; }
+          if(v === 'OUI'){ num += w; den += w; } else if(v === 'NON'){ den += w; }
         }
       });
       return den ? (num / den) * 100 : null;
     });
-    const vals = parSection.filter(x => x !== null);
-    return { parSection, total: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null };
+    let sn = 0, sd = 0;
+    parSection.forEach((p, i) => { if(p !== null){ sn += secs[i].coef * p; sd += secs[i].coef; } });
+    return { parSection, total: sd ? sn / sd : null };
   }
 
   function rzStatutProb(rec){
@@ -6011,15 +6066,31 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   function rzSlotCell(rec, slot, enPoste){
     const nom = rzEsc(rec.nom);
     const p = rzPct(rec[slot + 'Pct']);
-    const primeTxt = enPoste && p !== null ? `<span class="certif-sub">Prime : <b>${rzPrime(p)} €</b></span>` : '';
-    return `<div class="rz-slot">
-      <input type="date" class="certif-input rz-in" data-nom="${nom}" data-champ="${slot}Date" value="${rzEsc(rec[slot + 'Date'])}">
-      <span class="rz-pct"><input type="number" min="0" max="100" step="0.1" class="certif-input rz-in rz-pct-in" data-nom="${nom}" data-champ="${slot}Pct" value="${rzEsc(rec[slot + 'Pct'])}" placeholder="—"> %</span>
-      ${enPoste ? `<input type="text" class="certif-input rz-in rz-par-in" data-nom="${nom}" data-champ="${slot}Par" value="${rzEsc(rec[slot + 'Par'])}" placeholder="Par qui ?" maxlength="80">` : ''}
-      <button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${slot}" data-tip="Ouvrir la grille d'évaluation pour la remplir ou la modifier">📝 Grille</button>
-      ${p !== null ? `<button type="button" class="rz-grid-btn rz-view-btn" data-nom="${nom}" data-slot="${slot}" data-view="1" data-tip="Consulter la grille remplie et l'exporter en PDF">👁️ Consulter</button>` : ''}
-      ${p !== null ? `<span class="action-pill ${rzCls(p)}" style="margin-top:4px;">${rzFmtPct(p)}</span>` : ''}${primeTxt}
-    </div>`;
+    const d = rec[slot + 'Date'], par = enPoste ? (rec[slot + 'Par'] || '') : '';
+    const meta = [d ? rzFrD(d) : '', par ? 'par ' + rzEsc(par) : ''].filter(Boolean).join(' · ');
+    const btns = `<button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${slot}" data-tip="Ouvrir la grille d'évaluation pour la remplir ou la modifier">📝 ${p !== null ? 'Modifier' : 'Remplir la grille'}</button>`
+      + (p !== null ? `<button type="button" class="rz-grid-btn rz-view-btn" data-nom="${nom}" data-slot="${slot}" data-view="1" data-tip="Consulter la grille remplie et l'exporter en PDF">👁️ Voir</button>` : '');
+    const head = p !== null
+      ? `<div class="rz-res"><span class="action-pill ${rzCls(p)} rz-big">${rzFmtPct(p)}</span></div>${meta ? `<div class="rz-meta">${meta}</div>` : ''}`
+      : `<div class="rz-none">${meta ? meta : 'À réaliser'}</div>`;
+    return `<div class="rz-slot">${head}<div class="rz-actions">${btns}</div>
+      <details class="rz-edit"><summary>saisie manuelle</summary>
+        <input type="date" class="certif-input rz-in" data-nom="${nom}" data-champ="${slot}Date" value="${rzEsc(rec[slot + 'Date'])}">
+        <span class="rz-pct"><input type="number" min="0" max="100" step="0.1" class="certif-input rz-in rz-pct-in" data-nom="${nom}" data-champ="${slot}Pct" value="${rzEsc(rec[slot + 'Pct'])}" placeholder="—"> %</span>
+        ${enPoste ? `<input type="text" class="certif-input rz-in rz-par-in" data-nom="${nom}" data-champ="${slot}Par" value="${rzEsc(rec[slot + 'Par'])}" placeholder="Par qui ?" maxlength="80">` : ''}
+      </details></div>`;
+  }
+  // Prime d'un semestre : moyenne des % des 2 certifications du semestre, puis barème de prime (comme sur le tableur).
+  function rzSem(rec, a, b){
+    const v = [a, b].map(s => rzPct(rec[s + 'Pct'])).filter(x => x !== null);
+    if(!v.length) return null;
+    const m = v.reduce((x, y) => x + y, 0) / v.length;
+    return { n: v.length, m, prime: rzPrime(m) };
+  }
+  function rzSemCell(rec, a, b){
+    const r = rzSem(rec, a, b);
+    if(!r) return '<span style="color:var(--ink-soft);">—</span>';
+    return `<div class="rz-slot"><span class="action-pill ${rzCls(r.m)} rz-big">${rzFmtPct(r.m)}</span><span class="rz-prime">Prime : ${r.prime} €</span><span class="rz-meta">${r.n === 2 ? 'moyenne des 2 certifications' : 'provisoire : 1 certification sur 2'}</span></div>`;
   }
   function rzTypeSelect(rec){
     return `<select class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="type" style="max-width:130px;">
@@ -6030,7 +6101,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
 
 
   // ---- Planning : toutes les certifications attendues, à planifier / planifiées / réalisées / en retard ----
-  let rzPlanFilter = 'all';
+  let rzPlanFilter = 'todo';
   function rzProbCols(){ return rzRecords.some(r => r.type === 'probatoire' && (r.c3Date || r.c3Pct)) ? RZ_PROB_ALL : RZ_PROB_SLOTS; }
   function rzIsoToday(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   const rzFrD = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : '—'; };
@@ -6058,37 +6129,33 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     lignes.sort((a, b) => ordre[a.statut] - ordre[b.statut] || (a.prev || a.ech || '9').localeCompare(b.prev || b.ech || '9') || a.rec.nom.localeCompare(b.rec.nom, 'fr'));
     return lignes;
   }
-  const rzPlanOpen = new Set();
   function rzRenderPlan(){
     const all = rzPlanLignes();
-    const ST = { retard:['red','En retard','en retard'], aplanifier:['amber','À planifier','à planifier'], planifie:['gray','Planifiée','planifiée'], fait:['green','Réalisée','réalisée'] };
     const cnt = k => all.filter(l => l.statut === k).length;
-    document.getElementById('rzPlanCount').textContent = '';
-    const kpi = (k, col) => `<button type="button" class="certif-kpi rz-kpi-btn${rzPlanFilter === k ? ' active' : ''}" data-f="${k}"><b style="color:${col};">${cnt(k)}</b>${ST[k][2]}${cnt(k) > 1 && k !== 'retard' && k !== 'aplanifier' ? 's' : ''}</button>`;
-    document.getElementById('rzPlanBar').innerHTML = `<div class="certif-kpis" style="margin:0;">
-      ${kpi('retard', 'var(--red)')}${kpi('aplanifier', 'var(--amber-dark)')}${kpi('planifie', '#6b7078')}${kpi('fait', 'var(--green)')}
-      <button type="button" class="certif-kpi rz-kpi-btn${rzPlanFilter === 'all' ? ' active' : ''}" data-f="all"><b>${rzRecords.length}</b>RZ (tous)</button></div>
-      <span class="certif-sub" style="display:block;width:100%;">Clique sur une pastille pour filtrer, puis sur un RZ pour voir le détail. Échéances en poste : 30 juin (1er semestre) et 31 décembre (2e semestre) ; en période probatoire : fin de la période.</span>`;
-    const ordre = { retard:0, aplanifier:1, planifie:2, fait:3 };
-    const parRz = rzRecords.map(rec => { const ls = all.filter(l => l.rec === rec); const worst = ls.reduce((w, l) => ordre[l.statut] < ordre[w] ? l.statut : w, 'fait'); return { rec, ls, worst }; })
-      .filter(g => rzPlanFilter === 'all' || g.ls.some(l => l.statut === rzPlanFilter))
-      .sort((a, b) => ordre[a.worst] - ordre[b.worst] || a.rec.nom.localeCompare(b.rec.nom, 'fr'));
-    document.getElementById('rzWrapPlan').innerHTML = !parRz.length
-      ? '<p style="color:var(--ink-soft);font-size:13px;">' + (rzRecords.length ? 'Aucun RZ avec ce statut.' : 'Ajoute un RZ pour voir son planning de certifications.') + '</p>'
-      : '<div class="rz-bubbles">' + parRz.map(g => {
-          const nom = rzEsc(g.rec.nom), open = rzPlanOpen.has(g.rec.nom);
-          const pills = ['retard','aplanifier','planifie','fait'].filter(k => g.ls.some(l => l.statut === k)).map(k => `<span class="action-pill ${ST[k][0]}">${g.ls.filter(l => l.statut === k).length} ${ST[k][2]}${g.ls.filter(l => l.statut === k).length > 1 && (k === 'planifie' || k === 'fait') ? 's' : ''}</span>`).join('');
-          const rows = g.ls.map(l => { const p = ST[l.statut]; return `<tr class="${l.statut === 'retard' ? 'rz-plan-row-late' : (l.fait ? 'rz-plan-row-done' : '')}">
-              <td>${rzEsc(RZ_SLOT_LABELS[l.slot])}</td><td>${l.ech ? rzFrD(l.ech) : '—'}</td>
-              <td>${l.fait ? '—' : `<input type="date" class="certif-input rz-in" data-nom="${nom}" data-champ="${l.slot}Prev" value="${rzEsc(l.prev)}">`}</td>
-              <td><span class="action-pill ${p[0]}">${p[1]}</span></td>
-              <td>${l.fait ? `${l.date ? rzFrD(l.date) + ' · ' : ''}${l.pct !== null ? `<span class="action-pill ${rzCls(l.pct)}">${rzFmtPct(l.pct)}</span>${l.poste ? ` <span class="certif-sub" style="display:inline;">Prime ${rzPrime(l.pct)} €</span>` : ''}` : ''}` : '—'}</td>
-              <td><button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${l.slot}">📝 Grille</button>${l.pct !== null ? `<button type="button" class="rz-grid-btn rz-view-btn" data-nom="${nom}" data-slot="${l.slot}" data-view="1">👁️ Consulter</button>` : ''}</td></tr>`; }).join('');
-          return `<div class="rz-bubble rz-b-${g.worst}${open ? ' open' : ''}">
-            <button type="button" class="rz-bubble-head" data-nom="${nom}"><span><b>${displayName(g.rec.nom)}</b> <span class="certif-sub" style="display:inline;">${g.rec.type === 'probatoire' ? 'Probatoire' : 'En poste'}</span><span class="rz-bubble-pills">${pills}</span></span><span style="font-size:18px;color:var(--ink-soft);">${open ? '▾' : '▸'}</span></button>
-            <div class="rz-bubble-body"><div class="matrix-wrap"><table class="matrix-table"><thead><tr><th>Certification</th><th>Échéance</th><th data-tip="Date à laquelle tu prévois de réaliser la certification">Date prévue</th><th>Statut</th><th>Résultat</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`; }).join('') + '</div>';
-    document.querySelectorAll('.rz-kpi-btn').forEach(b => b.addEventListener('click', () => { rzPlanFilter = rzPlanFilter === b.dataset.f ? 'all' : b.dataset.f; renderRz(); }));
-    document.querySelectorAll('.rz-bubble-head').forEach(b => b.addEventListener('click', () => { const n = b.dataset.nom; if(rzPlanOpen.has(n)) rzPlanOpen.delete(n); else rzPlanOpen.add(n); renderRz(); }));
+    document.getElementById('rzPlanCount').textContent = all.length ? '(' + cnt('retard') + ' en retard · ' + cnt('aplanifier') + ' à planifier · ' + cnt('planifie') + ' planifiée' + (cnt('planifie') > 1 ? 's' : '') + ' · ' + cnt('fait') + ' réalisée' + (cnt('fait') > 1 ? 's' : '') + ')' : '';
+    document.getElementById('rzPlanBar').innerHTML = `<label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Afficher :
+      <select id="rzPlanFilter" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
+        <option value="todo"${rzPlanFilter === 'todo' ? ' selected' : ''}>Reste à faire</option><option value="done"${rzPlanFilter === 'done' ? ' selected' : ''}>Déjà réalisées</option><option value="all"${rzPlanFilter === 'all' ? ' selected' : ''}>Tout</option></select></label>
+      <span class="certif-sub" style="display:inline;">Échéances en poste : 30 juin (1er semestre) et 31 décembre (2e semestre). En période probatoire : fin de la période.</span>`;
+    const lignes = all.filter(l => rzPlanFilter === 'all' || (rzPlanFilter === 'done' ? l.fait : !l.fait));
+    const pill = { retard:['red','En retard'], aplanifier:['amber','À planifier'], planifie:['gray','Planifiée'], fait:['green','Réalisée'] };
+    document.getElementById('rzWrapPlan').innerHTML = !lignes.length
+      ? '<p style="color:var(--ink-soft);font-size:13px;">' + (rzRecords.length ? 'Rien à afficher avec ce filtre.' : 'Ajoute un RZ pour voir son planning de certifications.') + '</p>'
+      : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
+          <th>Responsable de zone</th><th>Certification</th><th data-tip="Date limite pour réaliser la certification">Échéance</th>
+          <th data-tip="Date à laquelle tu prévois de réaliser la certification">Date prévue</th><th>Statut</th><th>Résultat</th><th data-tip="Prime du semestre : moyenne des % des 2 certifications du semestre, puis barème">Prime du semestre</th><th></th></tr></thead><tbody>
+          ${lignes.map(l => { const nom = rzEsc(l.rec.nom); const p = pill[l.statut]; return `<tr class="${l.statut === 'retard' ? 'rz-plan-row-late' : (l.fait ? 'rz-plan-row-done' : '')}">
+            <td><b>${displayName(l.rec.nom)}</b><span class="certif-sub">${l.poste ? 'En poste' : 'Probatoire'}</span></td>
+            <td>${rzEsc(RZ_SLOT_LABELS[l.slot])}</td>
+            <td>${l.ech ? rzFrD(l.ech) : '—'}</td>
+            <td>${l.fait ? '—' : `<input type="date" class="certif-input rz-in" data-nom="${nom}" data-champ="${l.slot}Prev" value="${rzEsc(l.prev)}">`}</td>
+            <td><span class="action-pill ${p[0]}">${p[1]}</span></td>
+            <td>${l.fait ? `${l.date ? rzFrD(l.date) + ' · ' : ''}${l.pct !== null ? `<span class="action-pill ${rzCls(l.pct)}">${rzFmtPct(l.pct)}</span>` : ''}` : '—'}</td>
+            <td>${(() => { if(!l.poste) return '—'; const r = rzSem(l.rec, ...(l.slot === 's1' || l.slot === 's3' ? ['s1','s3'] : ['s2','s4'])); return r ? `<b>${r.prime} €</b><span class="certif-sub" style="display:block;">${r.n === 2 ? 'moyenne ' + rzFmtPct(r.m) : 'provisoire (1 sur 2)'}</span>` : '—'; })()}</td>
+            <td><button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${l.slot}">📝 Grille</button>${l.pct !== null ? `<button type="button" class="rz-grid-btn rz-view-btn" data-nom="${nom}" data-slot="${l.slot}" data-view="1">👁️ Consulter</button>` : ''}</td></tr>`; }).join('')}
+          </tbody></table></div>`;
+    const f = document.getElementById('rzPlanFilter');
+    if(f) f.addEventListener('change', () => { rzPlanFilter = f.value; renderRz(); });
   }
   function renderRz(){
     renderRzSummary();
@@ -6109,7 +6176,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           ${prob.map(rec => {
             const st = rzStatutProb(rec);
             return `<tr><td><b>${displayName(rec.nom)}</b></td><td>${rzTypeSelect(rec)}</td>
-              <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probDu" value="${rzEsc(rec.probDu)}" title="Du" style="margin-bottom:4px;display:block;"><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probAu" value="${rzEsc(rec.probAu)}" title="Au"></td>
+              <td><div style="display:grid;grid-template-columns:auto 140px;gap:4px 6px;align-items:center;justify-content:center;"><span class="certif-sub" style="display:inline;text-align:right;">Du</span><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probDu" value="${rzEsc(rec.probDu)}" title="Du" style="width:140px;"><span class="certif-sub" style="display:inline;text-align:right;">Au</span><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probAu" value="${rzEsc(rec.probAu)}" title="Au" style="width:140px;"></div></td>
               <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="vu" value="${rzEsc(rec.vu)}"></td>
               ${rzProbCols().map(s => `<td>${rzSlotCell(rec, s, false)}</td>`).join('')}
               <td>${st.m === null ? '<span style="color:var(--ink-soft);">—</span>' : `<span class="action-pill ${rzCls(st.m)}">${rzFmtPct(st.m)}</span><span class="certif-sub">${st.n} certification${st.n > 1 ? 's' : ''} sur ${rzProbCols().length}</span>`}</td>
@@ -6120,12 +6187,14 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       ? '<p style="color:var(--ink-soft);font-size:13px;">Aucun RZ en poste.</p>'
       : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
           <th>Responsable de zone</th><th data-tip="Repasser un RZ en « Probatoire » si besoin">Statut</th>
-          <th data-tip="1re certification non annoncée du 1er semestre : date, % obtenu, évaluateur. La prime en découle.">1er semestre<br>certif. 1</th>
-          <th data-tip="2e certification non annoncée du 1er semestre : date, % obtenu, évaluateur. La prime en découle.">1er semestre<br>certif. 2</th>
-          <th data-tip="1re certification non annoncée du 2e semestre : date, % obtenu, évaluateur. La prime en découle.">2e semestre<br>certif. 1</th>
-          <th data-tip="2e certification non annoncée du 2e semestre : date, % obtenu, évaluateur. La prime en découle.">2e semestre<br>certif. 2</th><th></th></tr></thead><tbody>
+          <th data-tip="1re certification non annoncée du 1er semestre : date, % obtenu, évaluateur.">1er semestre<br>certif. 1</th>
+          <th data-tip="2e certification non annoncée du 1er semestre : date, % obtenu, évaluateur.">1er semestre<br>certif. 2</th>
+          <th data-tip="Prime du 1er semestre : moyenne des % des 2 certifications, puis barème (80 % = 100 €, 85 % = 125 €, 90 % = 150 €, 95 % = 175 €, 98 % = 200 €)">Prime<br>1er semestre</th>
+          <th data-tip="1re certification non annoncée du 2e semestre : date, % obtenu, évaluateur.">2e semestre<br>certif. 1</th>
+          <th data-tip="2e certification non annoncée du 2e semestre : date, % obtenu, évaluateur.">2e semestre<br>certif. 2</th>
+          <th data-tip="Prime du 2e semestre : moyenne des % des 2 certifications, puis barème">Prime<br>2e semestre</th><th></th></tr></thead><tbody>
           ${poste.map(rec => `<tr><td><b>${displayName(rec.nom)}</b></td><td>${rzTypeSelect(rec)}</td>
-              ${RZ_POSTE_SLOTS.map(s => `<td>${rzSlotCell(rec, s, true)}</td>`).join('')}${rzDel(rec)}</tr>`).join('')}</tbody></table></div>`;
+              ${['s1','s3'].map(s => `<td>${rzSlotCell(rec, s, true)}</td>`).join('')}<td>${rzSemCell(rec, 's1', 's3')}</td>${['s2','s4'].map(s => `<td>${rzSlotCell(rec, s, true)}</td>`).join('')}<td>${rzSemCell(rec, 's2', 's4')}</td>${rzDel(rec)}</tr>`).join('')}</tbody></table></div>`;
 
     document.getElementById('rzTab').querySelectorAll('.rz-in').forEach(inp => {
       inp.addEventListener('change', () => { inp.disabled = true; rzAppel({sheet:'update_certification_rz', nom: inp.dataset.nom, champs: {[inp.dataset.champ]: inp.value}}); });
@@ -6181,6 +6250,9 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       ev = d.evaluation;
     } catch(err){ alert('Erreur : ' + err.message); return; }
     rzGrid.rep = (ev && ev.reponses) || {};
+    // La grille utilisée est celle mémorisée avec la certification (ou la grille d'origine pour les anciennes) ; sinon la grille actuelle.
+    rzGrid.form = rzGrid.rep._grille ? rzNormForm(rzGrid.rep._grille, kind) : (ev ? rzDefaultForm(kind) : rzCurrentForm(kind));
+    delete rzGrid.rep._grille;
     rzGrid.ev = ev;
     const today = new Date(); today.setHours(0,0,0,0);
     const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -6189,20 +6261,21 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const opts = kind === 'prob'
       ? [['V','Validé'],['E','En cours'],['N','Non acquis'],['X','Non évalué']]
       : [['OUI','OUI'],['NON','NON'],['SO','SO']];
-    const secs = RZ_FORMS[kind];
+    const secs = rzGrid.form.sections;
     document.getElementById('rzGridContent').innerHTML = `
       <p class="modal-sub" style="margin-top:0;">${kind === 'prob' ? 'Certification d\'un RZ en période probatoire' : 'Certification non annoncée d\'un RZ en poste'} — ${RZ_SLOT_LABELS[slot]}</p>
-      ${kind === 'prob' ? `<p class="rz-prereq"><b>Pré-requis :</b> ${rzEsc(RZ_FORMS.prereq)}</p>` : ''}
+      ${kind === 'prob' && rzGrid.form.prereq ? `<p class="rz-prereq"><b>Pré-requis :</b> ${rzEsc(rzGrid.form.prereq)}</p>` : ''}
       <div class="rz-head-fields">
         <label>RZ<input type="text" value="${rzEsc(displayName(nom))}" disabled></label>
         <label>Date de la certification<input type="date" id="rzGridDate" value="${rzEsc(dateInit)}"${ro ? ' disabled' : ''}></label>
         <label>Certifié par<input type="text" id="rzGridPar" value="${rzEsc(parInit)}" maxlength="80" placeholder="Nom de l'évaluateur"${ro ? ' disabled' : ''}></label>
       </div>
-      ${secs.map((s, si) => `<div class="rz-sec"><div class="rz-sec-head"><h4>${rzEsc(s.titre)}</h4><span class="action-pill gray" id="rzSecPct${si}">—</span></div>
-        ${s.lignes.map((l, li) => `<div class="rz-line"><div class="rz-line-txt">${rzEsc(l)}</div><div class="rz-opts">
+      ${secs.map((s, si) => `<div class="rz-sec"><div class="rz-sec-head"><h4>${rzEsc(s.titre)}${rzCoefBadge(s.coef)}</h4><span class="action-pill gray" id="rzSecPct${si}">—</span></div>
+        ${s.lignes.map((l, li) => `<div class="rz-line"><div class="rz-line-txt">${rzEsc(l.t)}${rzCoefBadge(l.c)}</div><div class="rz-opts">
           ${opts.map(([val, lab]) => `<label class="rz-opt rz-opt-${val}"><input type="radio" name="rz_${si}_${li}" value="${val}" data-k="${si}-${li}"${rzGrid.rep[si + '-' + li] === val ? ' checked' : ''}${ro ? ' disabled' : ''}><span>${lab}</span></label>`).join('')}
         </div>
-        <input type="text" class="rz-line-com" data-c="${si}-${li}" value="${rzEsc(rzGrid.rep['c' + si + '-' + li] || '')}" maxlength="300" placeholder="Commentaire"${ro ? ' disabled' : ''}></div>`).join('')}</div>`).join('')}
+        <input type="text" class="rz-line-com" data-c="${si}-${li}" value="${rzEsc(rzGrid.rep['c' + si + '-' + li] || '')}" maxlength="300" placeholder="Commentaire"${ro ? ' disabled' : ''}></div>`).join('')}
+        <div class="rz-axe-wrap"><input type="text" class="rz-axe-com" data-cs="${si}" value="${rzEsc(rzGrid.rep['cs' + si] || '')}" maxlength="500" placeholder="Commentaire sur cet axe"${ro ? ' disabled' : ''}></div></div>`).join('')}
       <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires<textarea id="rzGridComment" rows="3"${ro ? ' disabled' : ''} style="display:block;width:100%;margin-top:4px;font:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:8px;">${rzEsc((ev && ev.commentaire) || '')}</textarea></label>
       <div class="rz-total" id="rzTotal"></div>
       <div class="modal-error" id="rzGridError" style="display:none;"></div>
@@ -6210,6 +6283,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     document.getElementById('rzGridTitle').textContent = 'Grille — ' + displayName(nom);
     rzGridModal.style.display = '';
     rzGridModal.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', () => { rzGrid.rep[r.dataset.k] = r.value; rzGridRefresh(); }));
+    rzGridModal.querySelectorAll('.rz-axe-com').forEach(i => i.addEventListener('input', () => { rzGrid.rep['cs' + i.dataset.cs] = i.value; }));
     rzGridModal.querySelectorAll('.rz-line-com').forEach(i => i.addEventListener('input', () => { rzGrid.rep['c' + i.dataset.c] = i.value; }));
     document.getElementById('rzGridCancel').addEventListener('click', rzCloseGrid);
     document.getElementById('rzGridPdf').addEventListener('click', rzGridPdf);
@@ -6218,12 +6292,12 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     rzGridRefresh();
   }
   function rzGridRefresh(){
-    const { parSection, total } = rzCalc(rzGrid.kind, rzGrid.rep);
+    const { parSection, total } = rzCalc(rzGrid.kind, rzGrid.rep, rzGrid.form);
     parSection.forEach((p, si) => {
       const el = document.getElementById('rzSecPct' + si);
       if(el){ el.className = 'action-pill ' + rzCls(p); el.textContent = rzFmtPct(p); }
     });
-    const prime = rzGrid.kind === 'poste' ? rzPrime(total) : null;
+    const prime = null; // la prime se calcule par semestre (moyenne des 2 certifications)
     document.getElementById('rzTotal').innerHTML = `<span>Résultat de la certification</span> <span class="action-pill ${rzCls(total)}" style="font-size:15px;">${rzFmtPct(total)}</span>${prime !== null ? ` <span>· Prime : <b>${prime} €</b></span>` : ''}
       <span class="certif-sub" style="display:inline;margin-left:8px;">Vert ≥ 80 % · orange 71–79 % · rouge ≤ 70 %</span>`;
   }
@@ -6231,41 +6305,46 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   // Version imprimable / PDF de la grille (état affiché à l'écran) pour la transmettre au RZ.
   function rzGridPdf(){
     if(!rzGrid) return;
-    const kind = rzGrid.kind, secs = RZ_FORMS[kind];
-    const { parSection, total } = rzCalc(kind, rzGrid.rep);
-    const prime = kind === 'poste' ? rzPrime(total) : null;
+    const kind = rzGrid.kind, secs = rzGrid.form.sections;
+    const { parSection, total } = rzCalc(kind, rzGrid.rep, rzGrid.form);
+    const prime = null; // la prime se calcule par semestre (moyenne des 2 certifications)
     const lib = { V:'Validé', E:'En cours', N:'Non acquis', X:'Non évalué', OUI:'OUI', NON:'NON', SO:'SO' };
     const couleur = n => n === null ? '#888' : (n >= 80 ? '#1b7a3d' : (n >= 71 ? '#b86e00' : '#c0392b'));
     const fr = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : '—'; };
     const dateV = (document.getElementById('rzGridDate') || {}).value;
     const parV = ((document.getElementById('rzGridPar') || {}).value || '').trim();
     const comV = ((document.getElementById('rzGridComment') || {}).value || '').trim();
-    const corps = secs.map((s, si) => `<h3>${rzEsc(s.titre)} <span style="color:${couleur(parSection[si])};float:right;">${rzFmtPct(parSection[si])}</span></h3>
-      <table><tr class="h"><td>Critère</td><td>Évaluation</td><td>Commentaire</td></tr>${s.lignes.map((l, li) => { const v = rzGrid.rep[si + '-' + li]; return `<tr><td>${rzEsc(l)}</td><td class="rep r-${v || 'none'}">${v ? lib[v] : '—'}</td><td class="lc">${rzEsc(rzGrid.rep['c' + si + '-' + li] || '')}</td></tr>`; }).join('')}</table>`).join('');
+    const corps = secs.map((s, si) => `<h3>${rzEsc(s.titre)}${s.coef === 1 ? '' : ' (coef. ' + rzNumFmt(s.coef) + ')'} <span style="color:${couleur(parSection[si])};float:right;background:#fff;border-radius:999px;padding:1px 11px;">${rzFmtPct(parSection[si])}</span></h3>
+      <table><tr class="h"><td>Critère</td><td>Évaluation</td><td>Commentaire</td></tr>${s.lignes.map((l, li) => { const v = rzGrid.rep[si + '-' + li]; return `<tr><td>${rzEsc(l.t)}${l.c === 1 ? '' : ' <i style="color:#1e5c3a;font-size:10.5px;">(coef. ' + rzNumFmt(l.c) + ')</i>'}</td><td class="rep r-${v || 'none'}">${v ? lib[v] : '—'}</td><td class="lc">${rzEsc(rzGrid.rep['c' + si + '-' + li] || '')}</td></tr>`; }).join('')}</table>${rzGrid.rep['cs' + si] ? '<div class="axcom"><b>Commentaire sur l\'axe :</b> ' + rzEsc(rzGrid.rep['cs' + si]) + '</div>' : ''}`).join('');
     const win = window.open('', '_blank');
     if(!win){ alert('Autorise les fenêtres pop-up pour exporter le PDF.'); return; }
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Certification RZ — ${rzEsc(displayName(rzGrid.nom))} — ${rzEsc(RZ_SLOT_LABELS[rzGrid.slot])}</title>
       <style>
+        *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
         body{ font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; padding:22px; font-size:12px; }
-        h1{ font-size:19px; margin:0 0 2px; color:#c0392b; }
+        h1{ font-size:22px; margin:0; color:#fff; background:#1e5c3a; padding:14px 22px; border-radius:16px; }
+        .rule{ height:5px; background:#ffc72c; margin:9px 0 14px; border-radius:3px; }
         p.sub{ margin:0 0 12px; color:#555; font-size:12px; }
-        .meta{ display:flex; gap:24px; flex-wrap:wrap; margin-bottom:10px; font-size:12.5px; }
-        h3{ font-size:13px; background:#f2f0e8; padding:6px 8px; margin:14px 0 0; overflow:hidden; }
+        .meta{ display:flex; gap:26px; flex-wrap:wrap; margin-bottom:10px; font-size:12.5px; }
+        h3{ font-size:13px; color:#fff; background:#1e5c3a; border-radius:10px; padding:7px 12px; margin:18px 0 6px; overflow:hidden; border-bottom:3px solid #ffc72c; }
         table{ width:100%; border-collapse:collapse; page-break-inside:auto; }
         tr{ page-break-inside:avoid; }
-        td{ border:1px solid #ddd; padding:4px 7px; vertical-align:top; }
-        td.lc{ width:30%; font-style:italic; color:#444; } tr.h td{ background:#eee; font-weight:700; text-align:left; }
+        td{ border:none; padding:6px 9px; vertical-align:top; }
+        tr:nth-child(even) td{ background:#e8f1e8; }
+        td:first-child{ border-radius:8px 0 0 8px; } td:last-child{ border-radius:0 8px 8px 0; }
+        td.lc{ width:30%; font-style:italic; color:#444; } tr.h td{ background:transparent !important; color:#1e5c3a; font-weight:700; text-align:left; font-size:10.5px; text-transform:uppercase; border-bottom:1px solid #b9cdbd; border-radius:0; }
         td.rep{ width:90px; text-align:center; font-weight:700; }
         .r-V,.r-OUI{ color:#1b7a3d; } .r-E{ color:#b86e00; } .r-N,.r-NON{ color:#c0392b; } .r-X,.r-SO,.r-none{ color:#888; }
-        .total{ margin-top:16px; padding:10px; border:2px solid #1a1a1a; font-size:15px; font-weight:700; }
-        .com{ margin-top:12px; white-space:pre-wrap; border:1px solid #ddd; padding:8px; min-height:30px; }
+        .axcom{ margin:6px 0 0; padding:8px 12px; background:#fff4cc; border-left:4px solid #ffc72c; border-radius:8px; font-size:11.5px; font-style:italic; }
+        .total{ margin-top:18px; padding:12px 16px; border:2px solid #1e5c3a; border-radius:14px; background:#e8f1e8; font-size:15px; font-weight:700; }
+        .com{ margin-top:6px; white-space:pre-wrap; border:1px solid #b9cdbd; border-radius:10px; padding:9px; min-height:34px; }
         .prereq{ font-size:11px; color:#555; margin:6px 0; }
         @media print { body{ padding:0; } }
       </style></head><body>
-      <h1>Certification responsable de zone</h1>
+      <h1>Certification responsable de zone</h1><div class="rule"></div>
       <p class="sub">${rzEsc(currentRestaurant)} · ${kind === 'prob' ? 'Période probatoire' : 'Certification non annoncée — en poste'} · ${rzEsc(RZ_SLOT_LABELS[rzGrid.slot])}</p>
       <div class="meta"><span><b>RZ :</b> ${rzEsc(displayName(rzGrid.nom))}</span><span><b>Date :</b> ${fr(dateV)}</span><span><b>Certifié par :</b> ${rzEsc(parV || '—')}</span></div>
-      ${kind === 'prob' ? `<p class="prereq"><b>Pré-requis :</b> ${rzEsc(RZ_FORMS.prereq)}</p>` : ''}
+      ${kind === 'prob' && rzGrid.form.prereq ? `<p class="prereq"><b>Pré-requis :</b> ${rzEsc(rzGrid.form.prereq)}</p>` : ''}
       ${corps}
       <div class="total">Résultat de la certification : <span style="color:${couleur(total)};">${rzFmtPct(total)}</span>${prime !== null ? ` &nbsp;·&nbsp; Prime : ${prime} €` : ''}</div>
       <p style="font-size:10.5px;color:#666;">Vert ≥ 80 % · orange 71–79 % · rouge ≤ 70 %</p>
@@ -6278,7 +6357,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   function rzCloseGrid(){ rzGridModal.style.display = 'none'; rzGrid = null; }
   document.getElementById('rzGridClose').addEventListener('click', rzCloseGrid);
   async function rzSaveGrid(){
-    const { total } = rzCalc(rzGrid.kind, rzGrid.rep);
+    const { total } = rzCalc(rzGrid.kind, rzGrid.rep, rzGrid.form);
     const err = document.getElementById('rzGridError');
     err.style.display = 'none';
     const date = document.getElementById('rzGridDate').value;
@@ -6288,9 +6367,94 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     btn.disabled = true;
     const out = await rzAppel({sheet:'save_evaluation_rz', nom: rzGrid.nom, slot: rzGrid.slot, date,
       par: document.getElementById('rzGridPar').value.trim(), pct: Math.round(total * 10) / 10,
-      reponses: rzGrid.rep, commentaire: document.getElementById('rzGridComment').value.trim()});
+      reponses: Object.assign({}, rzGrid.rep, { _grille: rzGrid.form }), commentaire: document.getElementById('rzGridComment').value.trim()});
     if(out) rzCloseGrid(); else btn.disabled = false;
   }
+
+  // ---- Éditeur de grille ----
+  const rzEditModal = document.getElementById('rzEditModal');
+  let rzEd = null; // { kind, form }
+  function rzEdOpen(kind){
+    rzEd = { kind, form: JSON.parse(JSON.stringify(rzCurrentForm(kind))) };
+    document.getElementById('rzEdError').style.display = 'none';
+    rzEdRender();
+    rzEditModal.style.display = '';
+  }
+  function rzEdBtns(act, i, n, extra){
+    return `<span class="rz-ed-btns"><button type="button" data-act="${act}del" ${extra} title="Supprimer">🗑️</button></span>`;
+  }
+  function rzEdRender(){
+    const f = rzEd.form, kind = rzEd.kind, card = rzEditModal.querySelector('.modal-card'), sc = card.scrollTop;
+    const totSec = f.sections.reduce((a, s) => a + s.coef, 0) || 1;
+    document.getElementById('rzEdTitle').textContent = 'Modifier la grille — ' + (kind === 'prob' ? 'période probatoire' : 'RZ en poste');
+    document.getElementById('rzEdBody').innerHTML = `
+      ${kind === 'prob' ? `<label class="rz-ed-lab">Pré-requis (texte affiché en haut de la grille)<textarea id="rzEdPrereq" rows="2">${rzEsc(f.prereq)}</textarea></label>` : ''}
+      ${f.sections.map((s, si) => {
+        const totL = s.lignes.reduce((a, l) => a + l.c, 0) || 1;
+        return `<div class="rz-ed-sec">
+          <div class="rz-ed-sec-head">
+            <input type="text" class="rz-ed-in" data-f="titre" data-si="${si}" value="${rzEsc(s.titre)}" placeholder="Nom de l'axe" maxlength="150">
+            <label class="rz-ed-coef">Coef. <input type="number" class="rz-ed-in" data-f="coef" data-si="${si}" value="${s.coef}" min="0" max="20" step="0.5"></label>
+            ${rzEdBtns('s', si, f.sections.length, `data-si="${si}"`)}
+          </div>
+          ${s.lignes.map((l, li) => `<div class="rz-ed-line">
+            <input type="text" class="rz-ed-in" data-f="t" data-si="${si}" data-li="${li}" value="${rzEsc(l.t)}" placeholder="Critère" maxlength="400">
+            <label class="rz-ed-coef">Coef. <input type="number" class="rz-ed-in" data-f="c" data-si="${si}" data-li="${li}" value="${l.c}" min="0" max="20" step="0.5"></label>
+            ${rzEdBtns('l', li, s.lignes.length, `data-si="${si}" data-li="${li}"`)}
+          </div>`).join('')}
+          <button type="button" class="rz-grid-btn" data-act="addl" data-si="${si}">＋ Ajouter un critère</button>
+        </div>`; }).join('')}
+      <div style="margin-top:14px;"><button type="button" class="rz-grid-btn" data-act="adds">＋ Ajouter un axe</button></div>`;
+    card.scrollTop = sc;
+    const body = document.getElementById('rzEdBody');
+    const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n >= 0 ? n : 1; };
+    body.querySelectorAll('input.rz-ed-in').forEach(inp => {
+      const si = +inp.dataset.si, li = inp.dataset.li === undefined ? null : +inp.dataset.li, fld = inp.dataset.f;
+      const tgt = () => li === null ? f.sections[si] : f.sections[si].lignes[li];
+      if(inp.type === 'number'){ inp.addEventListener('change', () => { tgt()[fld] = num(inp.value); rzEdRender(); }); }
+      else { inp.addEventListener('input', () => { tgt()[fld] = inp.value; }); }
+    });
+    const pre = document.getElementById('rzEdPrereq'); if(pre) pre.addEventListener('input', () => { f.prereq = pre.value; });
+    const mv = (arr, i, d) => { const j = i + d; if(j >= 0 && j < arr.length){ const t = arr[i]; arr[i] = arr[j]; arr[j] = t; } };
+    body.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => {
+      const act = b.dataset.act, si = +b.dataset.si, li = +b.dataset.li, secs = f.sections;
+      if(act === 'sup') mv(secs, si, -1); else if(act === 'sdn') mv(secs, si, 1);
+      else if(act === 'sdel'){ if(!window.confirm('Supprimer cet axe et tous ses critères ?')) return; secs.splice(si, 1); }
+      else if(act === 'lup') mv(secs[si].lignes, li, -1); else if(act === 'ldn') mv(secs[si].lignes, li, 1);
+      else if(act === 'ldel') secs[si].lignes.splice(li, 1);
+      else if(act === 'addl') secs[si].lignes.push({ t: '', c: 1 });
+      else if(act === 'adds') secs.push({ titre: '', coef: 1, lignes: [{ t: '', c: 1 }] });
+      rzEdRender();
+    }));
+  }
+  function rzEdClose(){ rzEditModal.style.display = 'none'; rzEd = null; }
+  document.getElementById('rzEdClose').addEventListener('click', rzEdClose);
+  document.getElementById('rzEdCancel').addEventListener('click', rzEdClose);
+  document.getElementById('rzEdReset').addEventListener('click', () => {
+    if(!rzEd || !window.confirm('Revenir à la grille d\'origine (celle de la direction de la formation, coefficients à 1) ? Tes modifications non enregistrées seront perdues.')) return;
+    rzEd.form = rzDefaultForm(rzEd.kind); rzEdRender();
+  });
+  document.getElementById('rzEdSave').addEventListener('click', async () => {
+    if(!rzEd) return;
+    const err = document.getElementById('rzEdError'), f = rzEd.form;
+    const bad = msg => { err.textContent = msg; err.style.display = 'block'; };
+    err.style.display = 'none';
+    if(!f.sections.length) return bad('La grille doit contenir au moins un axe.');
+    for(const s of f.sections){
+      if(!String(s.titre).trim()) return bad('Chaque axe doit avoir un nom.');
+      if(!s.lignes.length) return bad('L\'axe « ' + s.titre + ' » doit contenir au moins un critère.');
+      if(s.lignes.some(l => !String(l.t).trim())) return bad('Un critère de l\'axe « ' + s.titre + ' » est vide.');
+    }
+    if(f.sections.every(s => s.coef === 0)) return bad('Au moins un axe doit avoir un coefficient supérieur à 0.');
+    const kind = rzEd.kind;
+    const form = { prereq: String(f.prereq || '').trim(), sections: f.sections.map(s => ({ titre: String(s.titre).trim(), coef: s.coef, lignes: s.lignes.map(l => ({ t: String(l.t).trim(), c: l.c })) })) };
+    const btn = document.getElementById('rzEdSave'); btn.disabled = true;
+    const out = await rzAppel({ sheet: 'save_grille_rz', type: kind, grille: form });
+    btn.disabled = false;
+    if(out){ rzGrilles[kind] = form; rzEdClose(); }
+  });
+  document.getElementById('rzEditProb').addEventListener('click', () => rzEdOpen('prob'));
+  document.getElementById('rzEditPoste').addEventListener('click', () => rzEdOpen('poste'));
 
   async function initRzTab(){
     rzWrapProb.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Chargement…</p>';
@@ -6300,6 +6464,10 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       const d = await res.json();
       if(!d.ok) throw new Error(d.error || 'Échec du chargement');
       rzRecords = d.records || [];
+      try{
+        const g = await (await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody({ sheet:'get_grille_rz', targetRestaurant: currentRestaurant })) })).json();
+        if(g.ok && g.grilles) rzGrilles = { prob: g.grilles.prob || null, poste: g.grilles.poste || null };
+      } catch(e){ /* ancienne version du serveur : grille d'origine */ }
       renderRz();
     } catch(err){
       rzWrapProb.innerHTML = '<p style="color:var(--red);font-size:13px;">Erreur de chargement : ' + err.message + '</p>';
