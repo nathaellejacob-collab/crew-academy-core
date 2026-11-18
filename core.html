@@ -1690,13 +1690,12 @@
       <button type="submit" class="restriction-toggle-btn" style="margin-bottom:0;">➕ Ajouter</button>
     </form>
     <div class="rz-gridtools"><span class="certif-sub" style="display:inline;margin:0;">Grilles d'évaluation :</span><button type="button" class="rz-grid-btn" id="rzEditProb">⚙️ Modifier la grille probatoire</button><button type="button" class="rz-grid-btn" id="rzEditPoste">⚙️ Modifier la grille en poste</button></div>
-    <h4 class="rz-block-title">📅 Planning des certifications <span id="rzPlanCount"></span></h4>
+    <h4 class="rz-block-title">📅 Suivi des certifications <span id="rzPlanCount"></span></h4>
     <div id="rzPlanBar" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"></div>
-    <div id="rzWrapPlan"></div>
-    <h4 class="rz-block-title">RZ en cours — période probatoire <span id="rzProbCount"></span></h4>
-    <div id="rzWrapProb"></div>
-    <h4 class="rz-block-title">RZ certifiés — en poste, certification non annoncée <span id="rzPosteCount"></span></h4>
+    <h4 class="rz-block-title">RZ en poste <span id="rzPosteCount"></span></h4>
     <div id="rzWrapPoste"></div>
+    <h4 class="rz-block-title">RZ en période probatoire <span id="rzProbCount"></span></h4>
+    <div id="rzWrapProb"></div>
   </div>
 </section>
 
@@ -6060,6 +6059,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       <div class="certif-kpi"><b>${rzRecords.length}</b>RZ suivi${rzRecords.length > 1 ? 's' : ''}</div>
       <div class="certif-kpi"><b style="color:var(--amber-dark);">${nProb}</b>en période probatoire</div>
       <div class="certif-kpi"><b style="color:var(--green);">${nPoste}</b>en poste</div>
+      ${nPoste ? (() => { let t1 = 0, t2 = 0, prov = 0; rzRecords.filter(r => r.type !== 'probatoire').forEach(r => { const a = rzSem(r, 's1', 's3'), b = rzSem(r, 's2', 's4'); if(a){ t1 += a.prime; if(a.n < 2) prov++; } if(b){ t2 += b.prime; if(b.n < 2) prov++; } }); return `<div class="certif-kpi" data-tip="Somme des primes de tous les RZ en poste : moyenne des 2 certifications de chaque semestre, puis barème"><b style="color:var(--navy);">${t1 + t2} €</b>total des primes<span class="certif-sub" style="display:block;">1er sem. ${t1} € · 2e sem. ${t2} €${prov ? ' · dont ' + prov + ' provisoire' + (prov > 1 ? 's' : '') : ''}</span></div>`; })() : ''}
     </div>`;
   }
 
@@ -6137,22 +6137,41 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       <select id="rzPlanFilter" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
         <option value="todo"${rzPlanFilter === 'todo' ? ' selected' : ''}>Reste à faire</option><option value="done"${rzPlanFilter === 'done' ? ' selected' : ''}>Déjà réalisées</option><option value="all"${rzPlanFilter === 'all' ? ' selected' : ''}>Tout</option></select></label>
       <span class="certif-sub" style="display:inline;">Échéances en poste : 30 juin (1er semestre) et 31 décembre (2e semestre). En période probatoire : fin de la période.</span>`;
-    const lignes = all.filter(l => rzPlanFilter === 'all' || (rzPlanFilter === 'done' ? l.fait : !l.fait));
     const pill = { retard:['red','En retard'], aplanifier:['amber','À planifier'], planifie:['gray','Planifiée'], fait:['green','Réalisée'] };
-    document.getElementById('rzWrapPlan').innerHTML = !lignes.length
-      ? '<p style="color:var(--ink-soft);font-size:13px;">' + (rzRecords.length ? 'Rien à afficher avec ce filtre.' : 'Ajoute un RZ pour voir son planning de certifications.') + '</p>'
-      : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
+    const filtre = l => rzPlanFilter === 'all' || (rzPlanFilter === 'done' ? l.fait : !l.fait);
+    const vide = poste => '<p style="color:var(--ink-soft);font-size:13px;">' + (rzRecords.some(r => (r.type === 'probatoire') !== poste) ? 'Rien à afficher avec ce filtre.' : (poste ? 'Aucun RZ en poste.' : 'Aucun RZ en période probatoire.')) + '</p>';
+    const cDate = l => `<td>${l.fait ? '—' : `<input type="date" class="certif-input rz-in" data-nom="${rzEsc(l.rec.nom)}" data-champ="${l.slot}Prev" value="${rzEsc(l.prev)}">`}</td>`;
+    const cStatut = l => `<td><span class="action-pill ${pill[l.statut][0]}">${pill[l.statut][1]}</span></td>`;
+    const cRes = l => `<td>${l.fait ? `${l.date ? rzFrD(l.date) + ' · ' : ''}${l.pct !== null ? `<span class="action-pill ${rzCls(l.pct)}">${rzFmtPct(l.pct)}</span>` : ''}` : '—'}</td>`;
+    const cBtns = l => { const nom = rzEsc(l.rec.nom); return `<td><div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${l.slot}">📝 Grille</button>${l.pct !== null ? `<button type="button" class="rz-grid-btn rz-view-btn" data-nom="${nom}" data-slot="${l.slot}" data-view="1">👁️ Consulter</button>` : ''}</div></td>`; };
+    const cls = l => l.statut === 'retard' ? 'rz-plan-row-late' : (l.fait ? 'rz-plan-row-done' : '');
+    const cNom = (l, extra) => `<td><b>${displayName(l.rec.nom)}</b><div style="margin-top:3px;">${rzTypeSelect(l.rec)}</div>${extra || ''}</td>`;
+
+    // ---- Tableau 1 : RZ en poste ----
+    const posteN = rzRecords.filter(r => r.type === 'en_poste').length, probN = rzRecords.length - posteN;
+    document.getElementById('rzPosteCount').textContent = posteN ? '(' + posteN + ')' : '';
+    document.getElementById('rzProbCount').textContent = probN ? '(' + probN + ')' : '';
+    const lp = all.filter(l => l.poste && filtre(l));
+    rzWrapPoste.innerHTML = !lp.length ? vide(true) : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
           <th>Responsable de zone</th><th>Certification</th><th data-tip="Date limite pour réaliser la certification">Échéance</th>
-          <th data-tip="Date à laquelle tu prévois de réaliser la certification">Date prévue</th><th>Statut</th><th>Résultat</th><th data-tip="Prime du semestre : moyenne des % des 2 certifications du semestre, puis barème">Prime du semestre</th><th></th></tr></thead><tbody>
-          ${lignes.map(l => { const nom = rzEsc(l.rec.nom); const p = pill[l.statut]; return `<tr class="${l.statut === 'retard' ? 'rz-plan-row-late' : (l.fait ? 'rz-plan-row-done' : '')}">
-            <td><b>${displayName(l.rec.nom)}</b><span class="certif-sub">${l.poste ? 'En poste' : 'Probatoire'}</span></td>
-            <td>${rzEsc(RZ_SLOT_LABELS[l.slot])}</td>
-            <td>${l.ech ? rzFrD(l.ech) : '—'}</td>
-            <td>${l.fait ? '—' : `<input type="date" class="certif-input rz-in" data-nom="${nom}" data-champ="${l.slot}Prev" value="${rzEsc(l.prev)}">`}</td>
-            <td><span class="action-pill ${p[0]}">${p[1]}</span></td>
-            <td>${l.fait ? `${l.date ? rzFrD(l.date) + ' · ' : ''}${l.pct !== null ? `<span class="action-pill ${rzCls(l.pct)}">${rzFmtPct(l.pct)}</span>` : ''}` : '—'}</td>
-            <td>${(() => { if(!l.poste) return '—'; const r = rzSem(l.rec, ...(l.slot === 's1' || l.slot === 's3' ? ['s1','s3'] : ['s2','s4'])); return r ? `<b>${r.prime} €</b><span class="certif-sub" style="display:block;">${r.n === 2 ? 'moyenne ' + rzFmtPct(r.m) : 'provisoire (1 sur 2)'}</span>` : '—'; })()}</td>
-            <td><button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${l.slot}">📝 Grille</button>${l.pct !== null ? `<button type="button" class="rz-grid-btn rz-view-btn" data-nom="${nom}" data-slot="${l.slot}" data-view="1">👁️ Consulter</button>` : ''}</td></tr>`; }).join('')}
+          <th data-tip="Date à laquelle tu prévois de réaliser la certification">Date prévue</th><th>Statut</th><th>Résultat</th>
+          <th data-tip="Prime du semestre : moyenne des % des 2 certifications du semestre, puis barème (80 % = 100 €, 85 % = 125 €, 90 % = 150 €, 95 % = 175 €, 98 % = 200 €)">Prime du semestre</th><th></th><th></th></tr></thead><tbody>
+          ${lp.map(l => { const r = rzSem(l.rec, ...(l.slot === 's1' || l.slot === 's3' ? ['s1','s3'] : ['s2','s4'])); return `<tr class="${cls(l)}">${cNom(l)}
+            <td>${rzEsc(RZ_SLOT_LABELS[l.slot])}</td><td>${l.ech ? rzFrD(l.ech) : '—'}</td>${cDate(l)}${cStatut(l)}${cRes(l)}
+            <td>${r ? `<b>${r.prime} €</b><span class="certif-sub" style="display:block;">${r.n === 2 ? 'moyenne ' + rzFmtPct(r.m) : 'provisoire (1 sur 2)'}</span>` : '—'}</td>${cBtns(l)}${rzDel(l.rec)}</tr>`; }).join('')}
+          </tbody></table></div>`;
+
+    // ---- Tableau 2 : période probatoire ----
+    const lb = all.filter(l => !l.poste && filtre(l));
+    const dt = (rec, ch, lab) => `<span class="certif-sub" style="display:inline;text-align:right;">${lab}</span><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="${ch}" value="${rzEsc(rec[ch])}" title="${lab}" style="width:140px;">`;
+    rzWrapProb.innerHTML = !lb.length ? vide(false) : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
+          <th>Responsable de zone</th><th data-tip="Dates de début et de fin de la période probatoire">Période probatoire</th>
+          <th data-tip="Date à laquelle le RZ a été vu par le superviseur">Vu par le superviseur</th><th>Certification</th>
+          <th data-tip="Date à laquelle tu prévois de réaliser la certification">Date prévue</th><th>Statut</th><th>Résultat</th><th></th><th></th></tr></thead><tbody>
+          ${lb.map(l => { const m = rzStatutProb(l.rec).m; return `<tr class="${cls(l)}">${cNom(l, m === null ? '' : `<span class="certif-sub">Moyenne : ${rzFmtPct(m)}</span>`)}
+            <td><div style="display:grid;grid-template-columns:auto 140px;gap:4px 6px;align-items:center;justify-content:center;">${dt(l.rec, 'probDu', 'Du')}${dt(l.rec, 'probAu', 'Au')}</div></td>
+            <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(l.rec.nom)}" data-champ="vu" value="${rzEsc(l.rec.vu)}"></td>
+            <td>${rzEsc(RZ_SLOT_LABELS[l.slot])}</td>${cDate(l)}${cStatut(l)}${cRes(l)}${cBtns(l)}${rzDel(l.rec)}</tr>`; }).join('')}
           </tbody></table></div>`;
     const f = document.getElementById('rzPlanFilter');
     if(f) f.addEventListener('change', () => { rzPlanFilter = f.value; renderRz(); });
@@ -6160,41 +6179,6 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   function renderRz(){
     renderRzSummary();
     rzRenderPlan();
-    const prob = rzRecords.filter(r => r.type === 'probatoire').sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
-    const poste = rzRecords.filter(r => r.type === 'en_poste').sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
-    document.getElementById('rzProbCount').textContent = prob.length ? '(' + prob.length + ')' : '';
-    document.getElementById('rzPosteCount').textContent = poste.length ? '(' + poste.length + ')' : '';
-
-    rzWrapProb.innerHTML = !prob.length
-      ? '<p style="color:var(--ink-soft);font-size:13px;">Aucun RZ en période probatoire.</p>'
-      : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
-          <th>Responsable de zone</th><th data-tip="Passer le RZ de « Probatoire » à « En poste » une fois certifié">Statut</th>
-          <th data-tip="Dates de début et de fin de la période probatoire">Période probatoire</th>
-          <th data-tip="Date à laquelle le RZ a été vu par le superviseur">Vu par le superviseur</th>
-          <th data-tip="1re certification : date et % obtenu">Certification 1</th><th data-tip="2e certification : date et % obtenu">Certification 2</th>${rzProbCols().length > 2 ? '<th data-tip="3e certification (ancien système) : date et % obtenu">Certification 3</th>' : ''}
-          <th data-tip="Moyenne des % obtenus aux certifications réalisées (vert à partir de 80 %)">Moyenne</th><th></th></tr></thead><tbody>
-          ${prob.map(rec => {
-            const st = rzStatutProb(rec);
-            return `<tr><td><b>${displayName(rec.nom)}</b></td><td>${rzTypeSelect(rec)}</td>
-              <td><div style="display:grid;grid-template-columns:auto 140px;gap:4px 6px;align-items:center;justify-content:center;"><span class="certif-sub" style="display:inline;text-align:right;">Du</span><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probDu" value="${rzEsc(rec.probDu)}" title="Du" style="width:140px;"><span class="certif-sub" style="display:inline;text-align:right;">Au</span><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probAu" value="${rzEsc(rec.probAu)}" title="Au" style="width:140px;"></div></td>
-              <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="vu" value="${rzEsc(rec.vu)}"></td>
-              ${rzProbCols().map(s => `<td>${rzSlotCell(rec, s, false)}</td>`).join('')}
-              <td>${st.m === null ? '<span style="color:var(--ink-soft);">—</span>' : `<span class="action-pill ${rzCls(st.m)}">${rzFmtPct(st.m)}</span><span class="certif-sub">${st.n} certification${st.n > 1 ? 's' : ''} sur ${rzProbCols().length}</span>`}</td>
-              ${rzDel(rec)}</tr>`;
-          }).join('')}</tbody></table></div>`;
-
-    rzWrapPoste.innerHTML = !poste.length
-      ? '<p style="color:var(--ink-soft);font-size:13px;">Aucun RZ en poste.</p>'
-      : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
-          <th>Responsable de zone</th><th data-tip="Repasser un RZ en « Probatoire » si besoin">Statut</th>
-          <th data-tip="1re certification non annoncée du 1er semestre : date, % obtenu, évaluateur.">1er semestre<br>certif. 1</th>
-          <th data-tip="2e certification non annoncée du 1er semestre : date, % obtenu, évaluateur.">1er semestre<br>certif. 2</th>
-          <th data-tip="Prime du 1er semestre : moyenne des % des 2 certifications, puis barème (80 % = 100 €, 85 % = 125 €, 90 % = 150 €, 95 % = 175 €, 98 % = 200 €)">Prime<br>1er semestre</th>
-          <th data-tip="1re certification non annoncée du 2e semestre : date, % obtenu, évaluateur.">2e semestre<br>certif. 1</th>
-          <th data-tip="2e certification non annoncée du 2e semestre : date, % obtenu, évaluateur.">2e semestre<br>certif. 2</th>
-          <th data-tip="Prime du 2e semestre : moyenne des % des 2 certifications, puis barème">Prime<br>2e semestre</th><th></th></tr></thead><tbody>
-          ${poste.map(rec => `<tr><td><b>${displayName(rec.nom)}</b></td><td>${rzTypeSelect(rec)}</td>
-              ${['s1','s3'].map(s => `<td>${rzSlotCell(rec, s, true)}</td>`).join('')}<td>${rzSemCell(rec, 's1', 's3')}</td>${['s2','s4'].map(s => `<td>${rzSlotCell(rec, s, true)}</td>`).join('')}<td>${rzSemCell(rec, 's2', 's4')}</td>${rzDel(rec)}</tr>`).join('')}</tbody></table></div>`;
 
     document.getElementById('rzTab').querySelectorAll('.rz-in').forEach(inp => {
       inp.addEventListener('change', () => { inp.disabled = true; rzAppel({sheet:'update_certification_rz', nom: inp.dataset.nom, champs: {[inp.dataset.champ]: inp.value}}); });
