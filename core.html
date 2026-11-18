@@ -123,7 +123,7 @@
     scrollbar-width:none; /* Firefox */
   }
   .tabnav::-webkit-scrollbar{display:none;} /* Chrome/Safari */
-  .tab-btn{
+  .tab-btn, .tab-group-btn{
     appearance:none;
     border:1px solid rgba(255,255,255,0.16);
     background:rgba(255,255,255,0.06);
@@ -137,12 +137,45 @@
     flex-shrink:0;
     white-space:nowrap;
   }
-  .tab-btn:hover{background:rgba(255,255,255,0.12); color:#fff;}
-  .tab-btn.active{
+  .tab-btn:hover, .tab-group-btn:hover{background:rgba(255,255,255,0.12); color:#fff;}
+  .tab-btn.active, .tab-group-btn.active{
     background:var(--paper);
     color:var(--ink);
     border-color:var(--paper);
   }
+
+
+  /* ---------- Sous-menu Certification ---------- */
+  .tabsub{max-width:1200px; margin:8px auto 0; display:flex; gap:6px; flex-wrap:wrap;}
+  .tab-btn.sub-btn{border-radius:999px; font-size:12.5px; padding:7px 16px;}
+  .tab-group-btn .arrow{font-size:10px; margin-left:4px;}
+  .rz-slot{display:flex; flex-direction:column; align-items:center; gap:4px;}
+  .rz-pct{font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+  .rz-pct-in{max-width:70px !important;}
+  .rz-par-in{max-width:130px !important;}
+  .rz-grid-btn{appearance:none; border:1px solid var(--line); background:#faf9f4; color:var(--navy-2); font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:999px; cursor:pointer;}
+  .rz-grid-btn:hover{background:#f0ede2;}
+  #rzTab table.matrix-table thead th, #rzTab table.matrix-table td{text-align:center; vertical-align:middle;}
+  .rz-block-title{font-size:15px; font-weight:800; margin:22px 0 10px; color:var(--ink);}
+  .rz-block-title span{color:var(--ink-soft); font-weight:600; font-size:13px;}
+  .rz-head-fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin:10px 0 6px;}
+  .rz-head-fields label{font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block;}
+  .rz-head-fields input{display:block; width:100%; margin-top:4px; font:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;}
+  .rz-prereq{font-size:12px; color:var(--ink-soft); background:#faf9f4; border:1px solid var(--line); border-radius:8px; padding:8px 10px; line-height:1.45;}
+  .rz-sec{margin-top:14px; border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .rz-sec-head{display:flex; justify-content:space-between; align-items:center; gap:10px; background:#f3f0e6; padding:8px 12px;}
+  .rz-sec-head h4{margin:0; font-size:13px; font-weight:800; color:var(--ink);}
+  .rz-line{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 12px; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .rz-line-txt{flex:1 1 320px; font-size:12.5px; line-height:1.4; color:var(--ink);}
+  .rz-opts{display:flex; gap:6px; flex-wrap:wrap;}
+  .rz-opt input{position:absolute; opacity:0; pointer-events:none;}
+  .rz-opt span{display:inline-block; font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink-soft); cursor:pointer; user-select:none;}
+  .rz-opt input:checked + span{color:#fff; border-color:transparent;}
+  .rz-opt-V input:checked + span, .rz-opt-OUI input:checked + span{background:var(--green);}
+  .rz-opt-E input:checked + span{background:var(--amber-dark);}
+  .rz-opt-N input:checked + span, .rz-opt-NON input:checked + span{background:var(--red);}
+  .rz-opt-X input:checked + span, .rz-opt-SO input:checked + span{background:#8a8f98;}
+  .rz-total{position:sticky; bottom:-22px; z-index:2; background:var(--panel); border-top:2px solid var(--line); padding:10px 4px 24px; margin-top:14px; font-size:13px; font-weight:700; display:flex; flex-wrap:wrap; align-items:center; gap:8px;}
 
   /* ---------- RESTAURANT BAR ---------- */
   .restaurant-bar{
@@ -1124,7 +1157,7 @@
     .restaurant-bar{padding:0 14px; gap:8px;}
     .restaurant-bar-label{display:none;} /* l'icône 🏠 seule suffit, gagne de la place */
     main{padding:14px 12px 40px;}
-    .tab-btn{padding:9px 14px; font-size:12.5px;}
+    .tab-btn, .tab-group-btn{padding:9px 14px; font-size:12.5px;}
     .stats{grid-template-columns:1fr 1fr; gap:8px;}
     .stat-card{padding:12px 14px;}
     .dispo-checkbox, .comp-checklist input[type="checkbox"]{width:20px; height:20px;}
@@ -1233,10 +1266,14 @@
     <button class="tab-btn" data-tab="planification">Planification</button>
     <button class="tab-btn" data-tab="cout-formation">Coût de la formation</button>
     <button class="tab-btn" data-tab="integration">Suivi intégration opérationnel</button>
-    <button class="tab-btn" data-tab="certification">Certification formateurs</button>
+    <button type="button" class="tab-group-btn" id="tabCertifGroupBtn" aria-expanded="false">Certification <span class="arrow">▾</span></button>
     <button class="tab-btn" data-tab="alternant">Alternant</button>
     <button class="tab-btn" data-tab="activite">Activité</button>
   </nav>
+  <div class="tabsub" id="certifSubnav" style="display:none;">
+    <button class="tab-btn sub-btn" data-tab="certification">Certification formateurs</button>
+    <button class="tab-btn sub-btn" data-tab="certification-rz">Certification RZ</button>
+  </div>
 </header>
 
 <div class="restaurant-bar" id="restaurantBar">
@@ -1602,6 +1639,36 @@
     <div id="certifTableWrap"></div>
   </div>
 </section>
+
+<section id="tab-certification-rz" style="display:none;">
+  <div class="panel-block" id="rzTab">
+    <div class="panel-head">
+      <h3>🧭 Certification des responsables de zone</h3>
+      <p>Suivi de la certification de chaque RZ : <b>période probatoire</b> (jusqu'à 3 certifications, avec la moyenne des %) puis <b>en poste</b> (certification non annoncée par semestre, avec la prime). Le bouton « 📝 Grille » ouvre la grille d'évaluation : le % est calculé tout seul et reporté dans le suivi.</p>
+    </div>
+    <div id="rzSummary"></div>
+    <form id="rzAddForm" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+      <label for="rzAddInput" style="font-size:12px; font-weight:700; color:var(--ink-soft);">Ajouter un RZ au suivi :</label>
+      <input type="text" id="rzAddInput" placeholder="Prénom NOM" autocomplete="off" style="font:inherit; font-size:13px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; min-width:220px;">
+      <select id="rzAddType" style="font:inherit; font-size:13px; padding:7px 10px; border:1px solid var(--line); border-radius:8px;"><option value="probatoire">Période probatoire</option><option value="en_poste">En poste</option></select>
+      <button type="submit" class="restriction-toggle-btn" style="margin-bottom:0;">➕ Ajouter</button>
+    </form>
+    <h4 class="rz-block-title">Période probatoire <span id="rzProbCount"></span></h4>
+    <div id="rzWrapProb"></div>
+    <h4 class="rz-block-title">En poste — certification non annoncée <span id="rzPosteCount"></span></h4>
+    <div id="rzWrapPoste"></div>
+  </div>
+</section>
+
+<div class="modal-overlay" id="rzGridModal" style="display:none;">
+  <div class="modal-card modal-card-wide" style="max-width:900px;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+      <h3 id="rzGridTitle" style="margin-bottom:2px;">Grille</h3>
+      <button type="button" id="rzGridClose" style="appearance:none; border:none; background:none; font-size:20px; cursor:pointer; color:var(--ink-soft); line-height:1;">✕</button>
+    </div>
+    <div id="rzGridContent"></div>
+  </div>
+</div>
 
 <section id="tab-alternant" style="display:none;">
   <div class="panel-block" id="alternantParametrageBlock">
@@ -2742,7 +2809,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
 
       // ----- 5 bis. Certification des formateurs -----
       if(accesResponsable) section('certification', '🏅', 'var(--plum)', 'Certification formateurs', 'Le parcours pour devenir formateur certifié',
-          para('Le suivi de chaque formateur sur son parcours de certification, étape par étape, pour savoir en un coup d\'œil où il en est.')
+          para('Le suivi de chaque formateur sur son parcours de certification, étape par étape, pour savoir en un coup d\'œil où il en est. Il se trouve dans le menu <strong>Certification</strong> (clique dessus pour le dérouler).')
             + sub('Les étapes du parcours')
             + list([
               '<strong>Certificat d\'aptitude</strong> obtenu, puis <strong>Phase 1</strong> : modules formateurs Crew Academy validés sur Campus.',
@@ -2759,6 +2826,23 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
               'Le <strong>🗑️</strong> retire un formateur du suivi (sa fiche est supprimée).',
             ])
             + tip('Comme le reste du site, seules l\'année en cours et l\'année précédente sont conservées : une fiche dont toutes les dates sont plus anciennes est supprimée automatiquement. Les actions sont notées dans le journal d\'activité, sous « Certification formateurs ».'));
+
+      if(accesResponsable) section('certification-rz', '🧭', 'var(--teal)', 'Certification RZ', 'Suivi des responsables de zone : probatoire et en poste',
+          para('Le suivi de la certification de chaque responsable de zone (RZ). Le menu <strong>Certification</strong> se déroule au clic et propose « Certification formateurs » et « Certification RZ ».')
+            + sub('Deux situations')
+            + list([
+              '<strong>Période probatoire</strong> : jusqu\'à 3 certifications (date + % obtenu). La <strong>moyenne</strong> des % est calculée automatiquement ; elle passe au vert à partir de 80 %.',
+              '<strong>En poste</strong> : une certification non annoncée par semestre (date, %, évaluateur). La <strong>prime</strong> se calcule selon le % : 80 % = 100 €, 85 % = 125 €, 90 % = 150 €, 95 % = 175 €, 98 % et plus = 200 €.',
+            ])
+            + sub('Utiliser l\'onglet')
+            + steps([
+              'Tape le nom du RZ, choisis « Période probatoire » ou « En poste », puis clique <strong>➕ Ajouter</strong>.',
+              'Renseigne les dates (période probatoire, vu par le superviseur, dates de certification) : elles s\'enregistrent dès que tu les choisis.',
+              'Clique <strong>📝 Grille</strong> sur une certification : réponds ligne par ligne (Validé / En cours / Non acquis / Non évalué en probatoire ; OUI / NON / SO en poste). Le % de chaque rubrique et le résultat se calculent tout seuls.',
+              'Clique <strong>Enregistrer</strong> : la date, le % et l\'évaluateur sont reportés dans le suivi. Tu peux rouvrir la grille plus tard pour la corriger.',
+              'Le menu « Statut » d\'une ligne fait passer un RZ de « Probatoire » à « En poste » une fois certifié. Le <strong>🗑️</strong> retire un RZ du suivi.',
+            ])
+            + tip('Comme le reste du site, seules l\'année en cours et l\'année précédente sont conservées. Les RZ et les formateurs n\'ont pas accès à cet onglet.'));
 
       // ----- 6. Alternant -----
       section('alternant', '🎓', 'var(--plum)', 'Alternant', 'Parcours et planning de l\'alternant',
@@ -4396,6 +4480,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   const tabCoutFormation = document.getElementById('tab-cout-formation');
   const tabIntegration = document.getElementById('tab-integration');
   const tabCertification = document.getElementById('tab-certification');
+  const tabCertificationRz = document.getElementById('tab-certification-rz');
   const tabAlternant = document.getElementById('tab-alternant');
   const statsWrap = document.getElementById('statsWrap');
   const statsRowEl = document.getElementById('statsRow');
@@ -4418,6 +4503,23 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   if(tabCertifBtn && !canSeeActivite){
     tabCertifBtn.style.display = 'none';
   }
+  // Menu « Certification » (formateurs + RZ) : même accès, il se déroule au clic.
+  const certifGroupBtn = document.getElementById('tabCertifGroupBtn');
+  const certifSubnav = document.getElementById('certifSubnav');
+  function setCertifMenu(open){
+    certifSubnav.style.display = open ? 'flex' : 'none';
+    certifGroupBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    certifGroupBtn.querySelector('.arrow').textContent = open ? '▴' : '▾';
+  }
+  if(!canSeeActivite){
+    certifGroupBtn.style.display = 'none';
+    certifSubnav.style.display = 'none';
+  }
+  certifGroupBtn.addEventListener('click', () => {
+    const open = certifSubnav.style.display === 'none';
+    setCertifMenu(open);
+    if(open && !certifSubnav.querySelector('.sub-btn.active')) certifSubnav.querySelector('.sub-btn').click();
+  });
 
   let coutFormationLoadedOnce = false;
   let integrationLoadedOnce = false;
@@ -4426,6 +4528,9 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       tabBtns.forEach(b => b.classList.toggle('active', b === btn));
+      const estSousMenu = btn.classList.contains('sub-btn');
+      certifGroupBtn.classList.toggle('active', estSousMenu);
+      if(estSousMenu) setCertifMenu(true); else setCertifMenu(false);
       const tab = btn.dataset.tab; // 'formations' | 'gestion' | 'polyvalence' | 'comparaison' | 'activite' | 'planification' | 'cout-formation' | 'integration' | 'alternant'
       tabFormations.style.display = tab === 'formations' ? '' : 'none';
       tabGestion.style.display = tab === 'gestion' ? '' : 'none';
@@ -4436,8 +4541,9 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       tabCoutFormation.style.display = tab === 'cout-formation' ? '' : 'none';
       tabIntegration.style.display = tab === 'integration' ? '' : 'none';
       tabCertification.style.display = tab === 'certification' ? '' : 'none';
+      tabCertificationRz.style.display = tab === 'certification-rz' ? '' : 'none';
       tabAlternant.style.display = tab === 'alternant' ? '' : 'none';
-      statsWrap.style.display = (tab === 'polyvalence' || tab === 'comparaison' || tab === 'activite' || tab === 'planification' || tab === 'cout-formation' || tab === 'integration' || tab === 'certification' || tab === 'alternant') ? 'none' : '';
+      statsWrap.style.display = (tab === 'polyvalence' || tab === 'comparaison' || tab === 'activite' || tab === 'planification' || tab === 'cout-formation' || tab === 'integration' || tab === 'certification' || tab === 'certification-rz' || tab === 'alternant') ? 'none' : '';
       statsRowEl.style.display = tab === 'formations' ? '' : 'none';
       statsRowGestionEl.style.display = tab === 'gestion' ? '' : 'none';
       if(tab === 'comparaison'){ renderComparaisonCharts(); renderComparaison(); }
@@ -4448,6 +4554,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         initIntegrationTab();
       }
       if(tab === 'certification'){ initCertifTab(); }
+      if(tab === 'certification-rz'){ initRzTab(); }
       if(tab === 'alternant' && !alternantLoadedOnce){
         alternantLoadedOnce = true;
         initAlternantTab();
@@ -5813,6 +5920,255 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     }
   }
   refreshFns.push(() => { if(tabCertification.style.display !== 'none') initCertifTab(); });
+
+
+  // ---------------- Certification des responsables de zone (RZ) ----------------
+  const RZ_FORMS = {"prob": [{"titre": "Qualités et aptitudes attendues", "lignes": ["Il/elle a toujours une présentation professionnelle propre et soignée", "Il/elle est exigent et encourage les employés sous sa supervision", "il/elle a été formé à la sécurité alimentaire (DSA et beef intégrity)", "Il/elle crée du dynamisme sur ses quarts de travail.", "Il/elle a une communication adaptée en fonction de la situation (participative ou directive)", "Il/elle donne systématiquement du feadback aux employés à leur arrivée et leur départ", "Il/ellePrend des initiatives dans certaines situations", "S’adapte aux situations inatendues, il/elle sait gérer son stress", "Il/elle a une vraie culture service (contact facile avec les clients, tours de contrôle réguliers en salle, propreté du restaurant, alentours et des toilettes)"]}, {"titre": "Activité : Prépa quart", "lignes": ["Les DLC ont été vérifiées sur la zone (horloge de tracabilité et la feuille prévue à cet effet)", "Utilise la prépa rush pour garantir un bon de niveau de stock (produits frais, congelés et secs)", "Il/elle fait en sorte que la zone soit propre", "Il/elle fait en sorte que l'aseptisation soit en place : Chiffons en quantité suffisante, un chiffon à chaque poste de production, que les seaux à chiffons soient vérifiés et timés.", "Il/elle s'assure que le niveau ReUse soit cohérent avec les besoins", "Il/elle fixe des objectifs ciblés aux formateurs présents sur le rush ou se fixe à lui-même des objectifs ciblés de formation et le partage lors du brief rush", "Il/elle prépare les tiroirs en ligne frit en fonction des niveaux ou que les sirops de la shake sont bien calibrés", "Il/elle a préparé son brief avec le manager"]}, {"titre": "Activité : Gestion de la zone / Cuisine", "lignes": ["Il/elle prépare le tempering ou verifie que le tempering soit bien en place", "Communique en permanence avec les équipiers pour dynamiser la zone", "Il/elle fait respecter les normes par chacun afin de maintenir un haut niveau de sécurité alimentaire et de propreté en cuisine (timers en cuisine,etc….)", "S'assure que le nettoyage au fur et à mesure soit respecter pendant le rush", "Fait preuve de leadership et de dynamisme pour booster la cuisine", "S'assure que tous les équipements fonctionnent et signale toute annomalie", "Il/elle fait de la reconnaissance positive et constructive tout au long du rush", "Il/elle communique éfficacement avec le manager sur sa prise de décisions afin d'aller chercher la performance en cuisine et fait créé le lien avec la zone comptoir", "Culture service : Il/elle s'assure que les produits soient bien emballés, pas plus de 6 produits/plateau et qu'ils soient propres. Les picks listes sont bien collés et visibles. Set à plateaux sur place.", "Il/elle s'assure que la montée et la baisse des niveaux soient respectés en donnant des directives précises", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses."]}, {"titre": "Activité : Gestion de la zone / Comptoir", "lignes": ["Il/elle a une réel capacité d'entrain et de leadership pour booster le comptoir", "Il/elle s'assure que les plateaux envoyés en SAT sont bien présentés et que les sacs des commandes drive ne contiennent pas plus que le nombre de produit recommandé.", "Effectue des tours de contrôle : toilettes, lobby et exterieurs au minimum 4 fois sur le rush (1h)", "Observe les zones de danger et prend les décisions afin d'améliorer le service", "Prend en charge les clients au comptoir et s'assure que les équipiers le fasse aussi", "Communique éfficacement avec le manager sur sa prise de décisions", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses.", "Développe son relationnel client et sa présence en salle afin d'atteindre le niveau 4", "S'assure que les ballons soient en place et que les happy meals soient en quantité suffisante", "Il/elle s'assure que la prise de commande efficace soit respectée et que les employés appliquent la cutlure service à l'enlevement."]}, {"titre": "Activité : Post quart", "lignes": ["Maintient un haut de niveau de service et/ou de production", "Donne les tâches aux équipiers (propretée, niveau des stocks et sécurité alimentaire)", "S'assure que les pertes (vides/complétes) soient corretement notées", "Occasionnellement il/elle peut être amené à procéder au comptage des caisses", "S'assure de la propreté de la salle", "Debriefing du rush avec le manager (point sur les objectifs ciblés de formation et de gestion de zone)"]}, {"titre": "Activité : hors gestion de zone", "lignes": ["Il/elle fait maintenir un haut de niveau de service et/ou de production avec les équipers présents sur la zone", "Priorise les tâches après rush : sécurité alimentaire et propreté (zone cuisine : cuisine et arrière cuisine) (zone comptoir : comptoir et salle)", "S'assure que les pertes (vides/complétes) ont été notées", "Il/elle réalise un feedback à chaque équipier qui quitte sa zone", "Demande un feedback au manager de shift sur sa gestion de zone"]}], "poste": [{"titre": "Aptitudes attendues", "lignes": ["Il/elle a toujours une présentation professionnelle propre et soignée", "Il/elle est exigent et encourage les employés sous sa supervision", "Il/elle fait respecter les normes et les procédures sur la zone ou il/elle est posté (e)", "Il/elle crée du dynamisme sur ses quarts de travail.", "Il/elle a une communication adaptée en fonction de la situation (participative ou directive)", "Il/elle donne systématiquement du feadback aux employés à leur arrivée et leur départ", "Il/elle prend des initiatives dans certaines situations", "il/elle maitrise la sécurité alimentaire (DSA et beef intégrity)", "S’adapte aux situations inatendues, il/elle sait gérer son stress", "Il/elle a une vraie culture service (contact facile avec les clients, tours de contrôle réguliers en salle, propreté du restaurant, alentours et des toilettes)"]}, {"titre": "Activité : Prépa quart", "lignes": ["Les DLC ont été vérifiées sur la zone (horloge de tracabilité et la feuille prévue à cet effet)", "Utilise la prépa rush pour garantir un bon de niveau de stock (produits frais, congelés et secs)", "Il/elle fait en sorte que la zone soit propre", "Il/elle fait en sorte que l'aseptisation soit en place : Chiffons en quantité suffisante, un chiffon à chaque poste de production, que les seaux à chiffons soient vérifiés et timés.", "Il/elle s'assure que le niveau ReUse soit cohérent avec les besoins", "Il/elle fixe des objectifs ciblés aux formateurs présents sur le rush ou se fixe à lui-même des objectifs ciblés de formation et le partage lors du brief rush", "Il/elle prépare les tiroirs en ligne frit en fonction des niveaux ou que les sirops de la shake sont bien calibrés", "Il/elle a préparé son brief avec le manager"]}, {"titre": "Activité : Gestion de la zone / Cuisine", "lignes": ["Il/elle prépare le tempering ou verifie que le tempering soit bien en place", "Communique en permanence avec les équipiers pour dynamiser la zone", "Il/elle fait respecter les normes par chacun afin de maintenir un haut niveau de sécurité alimentaire et de propreté en cuisine (timers en cuisine,etc….)", "S'assure que le nettoyage au fur et à mesure soit respecter pendant le rush", "Fait preuve de leadership et de dynamisme pour booster la cuisine", "S'assure que tous les équipements fonctionnent et signale toute annomalie", "Il/elle fait de la reconnaissance positive et constructive tout au long du rush", "Il/elle communique éfficacement avec le manager sur sa prise de décisions afin d'aller chercher la performance en cuisine et fait créé le lien avec la zone comptoir", "Culture service : Il/elle s'assure que les produits soient bien emballés, pas plus de 6 produits/plateau et qu'ils soient propres. Les picks listes sont bien collés et visibles. Set à plateaux sur place.", "Il/elle s'assure que la montée et la baisse des niveaux soient respectés en donnant des directives précises", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses."]}, {"titre": "Activité : Gestion de la zone / Comptoir", "lignes": ["Il/elle a une réel capacité d'entrain et de leadership pour booster le comptoir", "Il/elle s'assure que les plateaux envoyés en SAT sont bien présentés et que les sacs des commandes drive ne contiennent pas plus que le nombre de produit recommandé.", "Effectue des tours de contrôle : toilettes, lobby et exterieurs au minimum 4 fois sur le rush (1h)", "Observe les zones de danger et prend les décisions afin d'améliorer le service", "Prend en charge les clients au comptoir et s'assure que les équipiers le fasse aussi", "Communique éfficacement avec le manager sur sa prise de décisions", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses.", "Développe son relationnel client et sa présence en salle afin d'atteindre le niveau 4", "S'assure que les ballons soient en place et que les happy meals soient en quantité suffisante", "Il/elle s'assure que la prise de commande efficace soit respectée et que les employés appliquent la cutlure service à l'enlevement."]}, {"titre": "Activité : Post quart", "lignes": ["Il/elle fait maintenir un haut de niveau de service et/ou de production avec les équipers présents sur la zone", "Priorise les tâches après rush : sécurité alimentaire et propreté (zone cuisine : cuisine et arrière cuisine) (zone comptoir : comptoir et salle)", "S'assure que les pertes (vides/complétes) ont été notées", "Il/elle réalise un feedback à chaque équipier qui quitte sa zone", "Demande un feedback au manager de shift sur sa gestion de zone"]}], "prereq": "PRE-REQUIS A LA CERTIFICATION DU RESPONSABLE DE ZONE :Le futur responsable de zone doit avoir été certifié formateur. Le directeur du restaurant aura observé le formateur sur le terrain, en situation de maîtrise des process et avoir validé ses compétences de leadership. Les modules responsable de zone doivent être validés sur HU ONLINE."};
+  const RZ_SLOT_LABELS = {c1:'Certification 1', c2:'Certification 2', c3:'Certification 3', s1:'1er semestre', s2:'2e semestre'};
+  const RZ_PROB_SLOTS = ['c1','c2','c3'];
+  const RZ_POSTE_SLOTS = ['s1','s2'];
+  let rzRecords = [];
+  const rzWrapProb = document.getElementById('rzWrapProb');
+  const rzWrapPoste = document.getElementById('rzWrapPoste');
+  const rzSummary = document.getElementById('rzSummary');
+  const rzAddForm = document.getElementById('rzAddForm');
+  const rzAddInput = document.getElementById('rzAddInput');
+  const rzAddType = document.getElementById('rzAddType');
+  const rzGridModal = document.getElementById('rzGridModal');
+
+  function rzPct(v){ const n = parseFloat(String(v === undefined || v === null ? '' : v).replace(',', '.')); return isNaN(n) ? null : n; }
+  function rzFmtPct(n){ return n === null ? '—' : (Math.round(n * 10) / 10).toString().replace('.', ',') + ' %'; }
+  function rzCls(n){ return n === null ? 'gray' : (n >= 80 ? 'green' : (n >= 71 ? 'amber' : 'red')); }
+  function rzPrime(n){
+    if(n === null) return null;
+    return n >= 98 ? 200 : n >= 95 ? 175 : n >= 90 ? 150 : n >= 85 ? 125 : n >= 80 ? 100 : 0;
+  }
+  function rzMoyenneProb(rec){
+    const vals = RZ_PROB_SLOTS.map(s => rzPct(rec[s + 'Pct'])).filter(x => x !== null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  }
+  const rzEsc = s => String(s === undefined || s === null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+
+  // Calcul identique aux fichiers Excel de la direction de la formation.
+  //  - Période probatoire : Validé = 1, En cours = 0,5, Non acquis = 0 ; « Non évalué » sort du calcul ; une ligne non remplie compte 0.
+  //  - En poste : OUI = 1, NON = 0 ; « SO » sort du calcul ; une ligne non remplie n'est pas comptée.
+  //  Le résultat d'une grille = moyenne des % de ses rubriques.
+  function rzCalc(kind, rep){
+    const secs = RZ_FORMS[kind];
+    const parSection = secs.map((s, si) => {
+      let num = 0, den = 0;
+      s.lignes.forEach((_, li) => {
+        const v = rep[si + '-' + li];
+        if(kind === 'prob'){
+          if(v === 'X') return;
+          den++; num += v === 'V' ? 1 : v === 'E' ? 0.5 : 0;
+        } else {
+          if(v === 'OUI'){ num++; den++; } else if(v === 'NON'){ den++; }
+        }
+      });
+      return den ? (num / den) * 100 : null;
+    });
+    const vals = parSection.filter(x => x !== null);
+    return { parSection, total: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null };
+  }
+
+  function rzStatutProb(rec){
+    const faites = RZ_PROB_SLOTS.filter(s => rec[s + 'Date'] && certifPassee(rec[s + 'Date'])).length;
+    const avecPct = RZ_PROB_SLOTS.filter(s => rzPct(rec[s + 'Pct']) !== null).length;
+    const n = Math.max(faites, avecPct);
+    const m = rzMoyenneProb(rec);
+    return { n, m };
+  }
+
+  function renderRzSummary(){
+    if(!rzRecords.length){ rzSummary.innerHTML = ''; return; }
+    const nProb = rzRecords.filter(r => r.type === 'probatoire').length;
+    const nPoste = rzRecords.length - nProb;
+    rzSummary.innerHTML = `<div class="certif-kpis">
+      <div class="certif-kpi"><b>${rzRecords.length}</b>RZ suivi${rzRecords.length > 1 ? 's' : ''}</div>
+      <div class="certif-kpi"><b style="color:var(--amber-dark);">${nProb}</b>en période probatoire</div>
+      <div class="certif-kpi"><b style="color:var(--green);">${nPoste}</b>en poste</div>
+    </div>`;
+  }
+
+  function rzSlotCell(rec, slot, enPoste){
+    const nom = rzEsc(rec.nom);
+    const p = rzPct(rec[slot + 'Pct']);
+    const primeTxt = enPoste && p !== null ? `<span class="certif-sub">Prime : <b>${rzPrime(p)} €</b></span>` : '';
+    return `<div class="rz-slot">
+      <input type="date" class="certif-input rz-in" data-nom="${nom}" data-champ="${slot}Date" value="${rzEsc(rec[slot + 'Date'])}">
+      <span class="rz-pct"><input type="number" min="0" max="100" step="0.1" class="certif-input rz-in rz-pct-in" data-nom="${nom}" data-champ="${slot}Pct" value="${rzEsc(rec[slot + 'Pct'])}" placeholder="—"> %</span>
+      ${enPoste ? `<input type="text" class="certif-input rz-in rz-par-in" data-nom="${nom}" data-champ="${slot}Par" value="${rzEsc(rec[slot + 'Par'])}" placeholder="Par qui ?" maxlength="80">` : ''}
+      <button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${slot}" data-tip="Ouvrir la grille d'évaluation">📝 Grille</button>
+      ${p !== null ? `<span class="action-pill ${rzCls(p)}" style="margin-top:4px;">${rzFmtPct(p)}</span>` : ''}${primeTxt}
+    </div>`;
+  }
+  function rzTypeSelect(rec){
+    return `<select class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="type" style="max-width:130px;">
+      <option value="probatoire"${rec.type === 'probatoire' ? ' selected' : ''}>Probatoire</option>
+      <option value="en_poste"${rec.type === 'en_poste' ? ' selected' : ''}>En poste</option></select>`;
+  }
+  const rzDel = rec => `<td><button type="button" class="rz-delete-btn" data-nom="${rzEsc(rec.nom)}" title="Retirer du suivi" style="border:none;background:none;color:var(--red);cursor:pointer;">🗑️</button></td>`;
+
+  function renderRz(){
+    renderRzSummary();
+    const prob = rzRecords.filter(r => r.type === 'probatoire').sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+    const poste = rzRecords.filter(r => r.type === 'en_poste').sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+    document.getElementById('rzProbCount').textContent = prob.length ? '(' + prob.length + ')' : '';
+    document.getElementById('rzPosteCount').textContent = poste.length ? '(' + poste.length + ')' : '';
+
+    rzWrapProb.innerHTML = !prob.length
+      ? '<p style="color:var(--ink-soft);font-size:13px;">Aucun RZ en période probatoire.</p>'
+      : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
+          <th>Responsable de zone</th><th data-tip="Passer le RZ de « Probatoire » à « En poste » une fois certifié">Statut</th>
+          <th data-tip="Dates de début et de fin de la période probatoire">Période probatoire</th>
+          <th data-tip="Date à laquelle le RZ a été vu par le superviseur">Vu par le superviseur</th>
+          <th data-tip="1re certification : date et % obtenu">Certification 1</th><th data-tip="2e certification : date et % obtenu">Certification 2</th><th data-tip="3e certification : date et % obtenu">Certification 3</th>
+          <th data-tip="Moyenne des % obtenus aux certifications réalisées (vert à partir de 80 %)">Moyenne</th><th></th></tr></thead><tbody>
+          ${prob.map(rec => {
+            const st = rzStatutProb(rec);
+            return `<tr><td><b>${displayName(rec.nom)}</b></td><td>${rzTypeSelect(rec)}</td>
+              <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probDu" value="${rzEsc(rec.probDu)}" title="Du" style="margin-bottom:4px;display:block;"><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probAu" value="${rzEsc(rec.probAu)}" title="Au"></td>
+              <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="vu" value="${rzEsc(rec.vu)}"></td>
+              ${RZ_PROB_SLOTS.map(s => `<td>${rzSlotCell(rec, s, false)}</td>`).join('')}
+              <td>${st.m === null ? '<span style="color:var(--ink-soft);">—</span>' : `<span class="action-pill ${rzCls(st.m)}">${rzFmtPct(st.m)}</span><span class="certif-sub">${st.n} certification${st.n > 1 ? 's' : ''} sur 3</span>`}</td>
+              ${rzDel(rec)}</tr>`;
+          }).join('')}</tbody></table></div>`;
+
+    rzWrapPoste.innerHTML = !poste.length
+      ? '<p style="color:var(--ink-soft);font-size:13px;">Aucun RZ en poste.</p>'
+      : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
+          <th>Responsable de zone</th><th data-tip="Repasser un RZ en « Probatoire » si besoin">Statut</th>
+          <th data-tip="Certification non annoncée du 1er semestre : date, % obtenu, évaluateur. La prime en découle.">1er semestre</th>
+          <th data-tip="Certification non annoncée du 2e semestre : date, % obtenu, évaluateur. La prime en découle.">2e semestre</th><th></th></tr></thead><tbody>
+          ${poste.map(rec => `<tr><td><b>${displayName(rec.nom)}</b></td><td>${rzTypeSelect(rec)}</td>
+              ${RZ_POSTE_SLOTS.map(s => `<td>${rzSlotCell(rec, s, true)}</td>`).join('')}${rzDel(rec)}</tr>`).join('')}</tbody></table></div>`;
+
+    document.getElementById('rzTab').querySelectorAll('.rz-in').forEach(inp => {
+      inp.addEventListener('change', () => { inp.disabled = true; rzAppel({sheet:'update_certification_rz', nom: inp.dataset.nom, champs: {[inp.dataset.champ]: inp.value}}); });
+    });
+    document.getElementById('rzTab').querySelectorAll('.rz-grid-btn').forEach(btn => {
+      btn.addEventListener('click', () => rzOpenGrid(btn.dataset.nom, btn.dataset.slot));
+    });
+    document.getElementById('rzTab').querySelectorAll('.rz-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!window.confirm('Retirer ' + displayName(btn.dataset.nom) + ' du suivi de certification RZ ?\n\nSes dates, ses % et ses grilles seront supprimés.')) return;
+        await rzAppel({sheet:'delete_certification_rz', nom: btn.dataset.nom});
+      });
+    });
+  }
+
+  async function rzAppel(corps){
+    try{
+      const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(authBody(Object.assign({targetRestaurant: currentRestaurant}, corps))) });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || 'Échec');
+      if(data.records) rzRecords = data.records;
+      renderRz();
+      return data;
+    } catch(err){
+      alert('Erreur : ' + err.message);
+      renderRz();
+      return null;
+    }
+  }
+
+  rzAddForm.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const nom = rzAddInput.value.trim();
+    if(!nom) return;
+    if(await rzAppel({sheet:'add_certification_rz', nom, type: rzAddType.value})) rzAddInput.value = '';
+  });
+
+  // ---- Grille d'évaluation ----
+  let rzGrid = null; // {nom, slot, kind, rep}
+  async function rzOpenGrid(nom, slot){
+    const rec = rzRecords.find(r => r.nom === nom);
+    if(!rec) return;
+    const kind = slot[0] === 'c' ? 'prob' : 'poste';
+    rzGrid = { nom, slot, kind, rep: {} };
+    let ev = null;
+    try{
+      const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(authBody({sheet:'get_evaluation_rz', targetRestaurant: currentRestaurant, nom, slot})) });
+      const d = await res.json();
+      if(!d.ok) throw new Error(d.error || 'Échec');
+      ev = d.evaluation;
+    } catch(err){ alert('Erreur : ' + err.message); return; }
+    rzGrid.rep = (ev && ev.reponses) || {};
+    const today = new Date(); today.setHours(0,0,0,0);
+    const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const dateInit = (ev && ev.date) || rec[slot + 'Date'] || iso(today);
+    const parInit = (ev && ev.par) || rec[slot + 'Par'] || (isGerant ? '' : (sessionFormateur || ''));
+    const opts = kind === 'prob'
+      ? [['V','Validé'],['E','En cours'],['N','Non acquis'],['X','Non évalué']]
+      : [['OUI','OUI'],['NON','NON'],['SO','SO']];
+    const secs = RZ_FORMS[kind];
+    document.getElementById('rzGridContent').innerHTML = `
+      <p class="modal-sub" style="margin-top:0;">${kind === 'prob' ? 'Certification d\'un RZ en période probatoire' : 'Certification non annoncée d\'un RZ en poste'} — ${RZ_SLOT_LABELS[slot]}</p>
+      ${kind === 'prob' ? `<p class="rz-prereq"><b>Pré-requis :</b> ${rzEsc(RZ_FORMS.prereq)}</p>` : ''}
+      <div class="rz-head-fields">
+        <label>RZ<input type="text" value="${rzEsc(displayName(nom))}" disabled></label>
+        <label>Date de la certification<input type="date" id="rzGridDate" value="${rzEsc(dateInit)}"></label>
+        <label>Certifié par<input type="text" id="rzGridPar" value="${rzEsc(parInit)}" maxlength="80" placeholder="Nom de l'évaluateur"></label>
+      </div>
+      ${secs.map((s, si) => `<div class="rz-sec"><div class="rz-sec-head"><h4>${rzEsc(s.titre)}</h4><span class="action-pill gray" id="rzSecPct${si}">—</span></div>
+        ${s.lignes.map((l, li) => `<div class="rz-line"><div class="rz-line-txt">${rzEsc(l)}</div><div class="rz-opts">
+          ${opts.map(([val, lab]) => `<label class="rz-opt rz-opt-${val}"><input type="radio" name="rz_${si}_${li}" value="${val}" data-k="${si}-${li}"${rzGrid.rep[si + '-' + li] === val ? ' checked' : ''}><span>${lab}</span></label>`).join('')}
+        </div></div>`).join('')}</div>`).join('')}
+      <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires<textarea id="rzGridComment" rows="3" style="display:block;width:100%;margin-top:4px;font:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:8px;">${rzEsc((ev && ev.commentaire) || '')}</textarea></label>
+      <div class="rz-total" id="rzTotal"></div>
+      <div class="modal-error" id="rzGridError" style="display:none;"></div>
+      <div class="modal-actions"><button type="button" id="rzGridCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">Annuler</button><button type="button" id="rzGridSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button></div>`;
+    document.getElementById('rzGridTitle').textContent = 'Grille — ' + displayName(nom);
+    rzGridModal.style.display = '';
+    rzGridModal.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', () => { rzGrid.rep[r.dataset.k] = r.value; rzGridRefresh(); }));
+    document.getElementById('rzGridCancel').addEventListener('click', rzCloseGrid);
+    document.getElementById('rzGridSave').addEventListener('click', rzSaveGrid);
+    rzGridRefresh();
+  }
+  function rzGridRefresh(){
+    const { parSection, total } = rzCalc(rzGrid.kind, rzGrid.rep);
+    parSection.forEach((p, si) => {
+      const el = document.getElementById('rzSecPct' + si);
+      if(el){ el.className = 'action-pill ' + rzCls(p); el.textContent = rzFmtPct(p); }
+    });
+    const prime = rzGrid.kind === 'poste' ? rzPrime(total) : null;
+    document.getElementById('rzTotal').innerHTML = `<span>Résultat de la certification</span> <span class="action-pill ${rzCls(total)}" style="font-size:15px;">${rzFmtPct(total)}</span>${prime !== null ? ` <span>· Prime : <b>${prime} €</b></span>` : ''}
+      <span class="certif-sub" style="display:inline;margin-left:8px;">Vert ≥ 80 % · orange 71–79 % · rouge ≤ 70 %</span>`;
+  }
+  function rzCloseGrid(){ rzGridModal.style.display = 'none'; rzGrid = null; }
+  document.getElementById('rzGridClose').addEventListener('click', rzCloseGrid);
+  async function rzSaveGrid(){
+    const { total } = rzCalc(rzGrid.kind, rzGrid.rep);
+    const err = document.getElementById('rzGridError');
+    err.style.display = 'none';
+    const date = document.getElementById('rzGridDate').value;
+    if(!date){ err.textContent = 'Renseigne la date de la certification.'; err.style.display = 'block'; return; }
+    if(total === null){ err.textContent = 'Réponds à au moins une ligne avant d\'enregistrer.'; err.style.display = 'block'; return; }
+    const btn = document.getElementById('rzGridSave');
+    btn.disabled = true;
+    const out = await rzAppel({sheet:'save_evaluation_rz', nom: rzGrid.nom, slot: rzGrid.slot, date,
+      par: document.getElementById('rzGridPar').value.trim(), pct: Math.round(total * 10) / 10,
+      reponses: rzGrid.rep, commentaire: document.getElementById('rzGridComment').value.trim()});
+    if(out) rzCloseGrid(); else btn.disabled = false;
+  }
+
+  async function initRzTab(){
+    rzWrapProb.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Chargement…</p>';
+    rzWrapPoste.innerHTML = '';
+    try{
+      const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody({ sheet:'get_certification_rz', targetRestaurant: currentRestaurant })) });
+      const d = await res.json();
+      if(!d.ok) throw new Error(d.error || 'Échec du chargement');
+      rzRecords = d.records || [];
+      renderRz();
+    } catch(err){
+      rzWrapProb.innerHTML = '<p style="color:var(--red);font-size:13px;">Erreur de chargement : ' + err.message + '</p>';
+    }
+  }
+  refreshFns.push(() => { if(tabCertificationRz.style.display !== 'none') initRzTab(); });
 
 
   // ---------------- Alternant ----------------
