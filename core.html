@@ -6990,13 +6990,13 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         <div class="su-duo"><div><h5 class="su-h5">✅ Points forts de notre formation</h5>${forts.length ? `<ul>${forts.map(q => li(q, 'bien noté')).join('')}</ul>` : '<p class="certif-sub">Pas encore de question à 80 % ou plus.</p>'}</div>
         <div><h5 class="su-h5">🎯 Axes d'amélioration</h5>${faibles.length ? `<ul>${faibles.map(q => li(q, 'à améliorer')).join('')}</ul>` : '<p class="certif-sub">Toutes les questions sont à 80 % ou plus.</p>'}</div></div>
         ${tabQ}${tabF}${tabC}`}
-      <h4 class="rz-block-title" style="margin-top:26px;">Débrief de l'année rédigé par l'IA</h4>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"><button type="button" class="rz-grid-btn" id="suDebriefBtn"${suBusy ? ' disabled' : ''}>${suBusy ? '⏳ Rédaction en cours…' : (suDebrief && suDebrief.texte ? '✨ Régénérer le débrief' : '✨ Générer le débrief de l\'année')}</button>${suDebrief && suDebrief.texte ? '<button type="button" class="rz-grid-btn" id="suDebriefCopy">📋 Copier le texte</button>' : ''}</div>
-      ${deb}`;
+      <h4 class="rz-block-title" style="margin-top:26px;">Débrief de l'année avec l'IA</h4>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"><button type="button" class="rz-grid-btn" id="suDebriefBtn">📋 Copier pour l\'IA</button></div>
+      <p class="certif-sub">Copie les réponses et commentaires de ${suAnnee} (sans les noms des équipiers), puis colle-les dans une conversation Claude : il rédige le débrief de l'année (points forts, axes d'amélioration, thèmes récurrents, actions).</p>`;
     document.getElementById('suFilter').addEventListener('change', e => { suFilter = e.target.value; suRender(); });
     document.getElementById('suAnnee').addEventListener('change', async e => { suAnnee = e.target.value; suDebrief = null; suRender(); suChargerDebrief(); });
     document.getElementById('suEditGrid').addEventListener('click', suEdOpen);
-    document.getElementById('suDebriefBtn').addEventListener('click', suGenererDebrief);
+    document.getElementById('suDebriefBtn').addEventListener('click', suCopierIA);
     const cp = document.getElementById('suDebriefCopy'); if(cp) cp.addEventListener('click', () => { navigator.clipboard.writeText(suDebrief.texte); cp.textContent = '✓ Copié'; });
     suivisWrap.querySelectorAll('button[data-su-type]').forEach(b => b.addEventListener('click', () => suOpen(b.dataset.suNom, b.dataset.suType, b.dataset.suRo === '1')));
   }
@@ -7012,6 +7012,23 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     suBusy = false;
     if(d && d.debrief) suDebrief = d.debrief;
     suRender();
+  }
+  function suCopierIA(){
+    const recs = suSuivis.filter(s => s.date && s.date.slice(0, 4) === suAnnee && s.resume && s.resume.Q);
+    if(!recs.length){ alert('Aucun suivi enregistré en ' + suAnnee + ' : rien à copier.'); return; }
+    const anon = {}; let n = 0; const code = nom => anon[nom] || (anon[nom] = 'Équipier ' + (++n));
+    const nettoie = (t, nom) => { let x = String(t || ''); String(nom).split(/\s+/).filter(p => p.length > 2).forEach(p => { x = x.replace(new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), "l'équipier"); }); return x; };
+    const blocs = recs.map(r => {
+      const lignes = [];
+      r.resume.Q.forEach(q => { const com = nettoie((r.coms || {})[q.k], r.nom); if(!q.v && !com) return; lignes.push('- ' + q.t + ' → ' + (q.m ? (q.v || 'non répondu') : 'réponse libre') + (com ? ' | commentaire : ' + com : '')); });
+      const crit = (r.resume.C || []).map(c => c.t + ' : ' + (c.v || '—')).join(' ; ');
+      return '### ' + code(r.nom) + ' — suivi à ' + (r.type === 'j30' ? '30' : '60') + ' jours, réalisé par ' + (r.par || 'non précisé') + ' (satisfaction ' + (r.pct || '—') + ' %)\n' + lignes.join('\n') + (crit ? '\nCritères de période d\'essai : ' + crit : '');
+    });
+    const prompt = 'Tu aides le gérant d\'un restaurant McDonald\'s à préparer le bilan annuel de l\'accueil et de la formation de ses nouveaux équipiers. Voici les ' + recs.length + ' suivis à 30 et 60 jours réalisés en ' + suAnnee + ' (les équipiers sont anonymisés ; les formateurs qui ont réalisé le suivi sont nommés). Chaque question a reçu OUI, PARTIELLEMENT ou NON de la part du nouvel équipier, avec parfois un commentaire.\n\n' + blocs.join('\n\n') + '\n\nRédige en français un débrief de fin d\'année, clair et direct, destiné au gérant et au Responsable formation, avec ces parties : 1) Ce qui fonctionne bien dans notre formation et notre accueil (avec les chiffres ou exemples qui l\'appuient) ; 2) Nos axes d\'amélioration (priorisés) ; 3) Les thèmes qui reviennent dans les commentaires, notamment ce que les équipiers auraient aimé savoir plus tôt ; 4) Observations par formateur (seulement si les données le permettent, sans jugement hâtif) ; 5) Cinq actions concrètes pour l\'année suivante. Ne rien inventer : si les données sont trop peu nombreuses pour conclure, dis-le. Pas de tableaux : des titres courts et des listes à puces.';
+    const btn = document.getElementById('suDebriefBtn');
+    const ok = () => { if(btn){ btn.textContent = '✓ Copié — colle-le dans Claude'; setTimeout(() => { btn.textContent = '📋 Copier pour l\'IA'; }, 4000); } };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(prompt).then(ok).catch(() => window.prompt('Copie ce texte (Cmd+C) :', prompt));
+    else window.prompt('Copie ce texte (Cmd+C) :', prompt);
   }
   async function suInit(){
     suLoaded = false;
