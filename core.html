@@ -167,6 +167,16 @@
   .rz-block-title{font-size:15px; font-weight:800; margin:22px 0 10px; color:var(--ink);}
   .rz-block-title span{color:var(--ink-soft); font-weight:600; font-size:13px;}
   .rz-plan-row-late td{background:#fdf0ee;} .rz-plan-row-done td{color:var(--ink-soft);}
+  #suivisWrap table.matrix-table thead th, #suivisWrap table.matrix-table td{text-align:center; vertical-align:middle;}
+  .su-h5{margin:18px 0 6px; font-size:13px; color:var(--navy);}
+  .su-kpis{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:6px;}
+  .su-kpi{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 16px; display:flex; flex-direction:column; gap:4px; min-width:160px;}
+  .su-kpi span{font-size:11.5px; font-weight:700; color:var(--ink-soft);} .su-kpi b{font-size:20px;}
+  .su-duo{display:grid; grid-template-columns:1fr 1fr; gap:18px;} .su-duo ul{margin:6px 0; padding-left:18px; font-size:13px; line-height:1.7;}
+  @media (max-width:800px){ .su-duo{grid-template-columns:1fr;} }
+  .su-com{border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin:6px 0; background:#fff; font-size:13px;} .su-com summary{cursor:pointer; font-weight:700;} .su-com ul{margin:8px 0 2px; padding-left:18px; line-height:1.6;}
+  .su-debrief{white-space:pre-wrap; background:#fff; border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:10px; padding:14px 16px; font-size:13.5px; line-height:1.6;}
+  .su-lab{display:block; font-size:11.5px; font-weight:700; color:var(--ink-soft); margin-top:10px;} .su-lab textarea{display:block; width:100%; margin-top:4px; font:inherit; font-size:13px; padding:8px; border:1px solid var(--line); border-radius:8px;}
   .rz-head-fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin:10px 0 6px;}
   .rz-head-fields label{font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block;}
   .rz-head-fields input{display:block; width:100%; margin-top:4px; font:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;}
@@ -1302,6 +1312,7 @@
     <button class="tab-btn" data-tab="planification">Planification</button>
     <button class="tab-btn" data-tab="cout-formation">Coût de la formation</button>
     <button class="tab-btn" data-tab="integration">Suivi intégration opérationnel</button>
+    <button class="tab-btn" id="tabSuivisBtn" data-tab="suivis">Suivis 4 semaines / 60 jours</button>
     <button type="button" class="tab-group-btn" id="tabCertifGroupBtn" aria-expanded="false">Certification <span class="arrow">▾</span></button>
     <button class="tab-btn" data-tab="alternant">Alternant</button>
     <button class="tab-btn" data-tab="activite">Activité</button>
@@ -1660,6 +1671,16 @@
   </div>
 </section>
 
+<section id="tab-suivis" style="display:none;">
+  <div class="panel-block" id="suivisTab">
+    <div class="panel-head">
+      <h3>🤝 Suivis à 4 semaines et à 60 jours</h3>
+      <p>La grille de suivi de chaque nouvel équipier. Ses réponses servent à mesurer la qualité de notre accueil et de notre formation : en fin d'année, le bilan fait ressortir nos points forts, nos axes d'amélioration, et l'IA rédige un débrief à partir des commentaires.</p>
+    </div>
+    <div id="suivisWrap"><p style="color:var(--ink-soft);font-size:13px;">Chargement…</p></div>
+  </div>
+</section>
+
 <section id="tab-certification" style="display:none;">
   <div class="panel-block">
     <div class="panel-head">
@@ -1710,6 +1731,19 @@
     <div id="rzEdBody"></div>
     <div class="modal-error" id="rzEdError" style="display:none;"></div>
     <div class="modal-actions"><button type="button" id="rzEdReset" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);margin-right:auto;">↺ Grille d'origine</button><button type="button" id="rzEdCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">Annuler</button><button type="button" id="rzEdSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer la grille</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="suEdModal" style="display:none;">
+  <div class="modal-card modal-card-wide" style="max-width:900px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+      <h3 style="margin-bottom:2px;">Modifier la grille des suivis</h3>
+      <button type="button" id="suEdClose" style="appearance:none; border:none; background:none; font-size:20px; cursor:pointer; color:var(--ink-soft); line-height:1;">✕</button>
+    </div>
+    <p class="modal-sub">Renomme, ajoute, déplace ou supprime les questions et les critères. Pour chaque question, choisis « OUI / PARTIEL / NON » (elle alimente le bilan) ou « Libre » (texte seul). Les suivis déjà réalisés gardent la grille utilisée le jour où ils ont été faits.</p>
+    <div id="suEdBody"></div>
+    <div class="modal-error" id="suEdError" style="display:none;"></div>
+    <div class="modal-actions"><button type="button" id="suEdReset" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);margin-right:auto;">↺ Grille d'origine</button><button type="button" id="suEdCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">Annuler</button><button type="button" id="suEdSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer la grille</button></div>
   </div>
 </div>
 
@@ -4532,6 +4566,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   const tabPlanification = document.getElementById('tab-planification');
   const tabCoutFormation = document.getElementById('tab-cout-formation');
   const tabIntegration = document.getElementById('tab-integration');
+  const tabSuivis = document.getElementById('tab-suivis');
   const tabCertification = document.getElementById('tab-certification');
   const tabCertificationRz = document.getElementById('tab-certification-rz');
   const tabAlternant = document.getElementById('tab-alternant');
@@ -4546,6 +4581,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   // Seul le gérant ou un "Responsable formation" actif voit l'onglet Activité —
   // invisible pour un simple formateur.
   const canSeeActivite = isGerant || isResponsableLevelRole(sessionRole);
+  // Certifications, évaluations et suivis : réservés au gérant et aux profils de direction (ni Formateur, ni Responsable de zone, ni Manager).
+  const canSeeCertif = isGerant || (isResponsableLevelRole(sessionRole) && !['Responsable de zone', 'Manager'].includes(String(sessionRole || '').trim()));
   const tabActiviteBtn = document.querySelector('.tab-btn[data-tab="activite"]');
   if(tabActiviteBtn && !canSeeActivite){
     tabActiviteBtn.style.display = 'none';
@@ -4553,9 +4590,12 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
 
   // Certification des formateurs : réservée au gérant et au Responsable formation (onglet invisible pour un simple formateur).
   const tabCertifBtn = document.querySelector('.tab-btn[data-tab="certification"]');
-  if(tabCertifBtn && !canSeeActivite){
+  if(tabCertifBtn && !canSeeCertif){
     tabCertifBtn.style.display = 'none';
   }
+  // Suivis 4 semaines / 60 jours : même accès (gérant et Responsable formation).
+  const tabSuivisBtn = document.getElementById('tabSuivisBtn');
+  if(tabSuivisBtn && !canSeeCertif){ tabSuivisBtn.style.display = 'none'; }
   // Menu « Certification » (formateurs + RZ) : même accès, il se déroule au clic.
   const certifGroupBtn = document.getElementById('tabCertifGroupBtn');
   const certifSubnav = document.getElementById('certifSubnav');
@@ -4564,7 +4604,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     certifGroupBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     certifGroupBtn.querySelector('.arrow').textContent = open ? '▴' : '▾';
   }
-  if(!canSeeActivite){
+  if(!canSeeCertif){
     certifGroupBtn.style.display = 'none';
     certifSubnav.style.display = 'none';
   }
@@ -4593,10 +4633,11 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       tabPlanification.style.display = tab === 'planification' ? '' : 'none';
       tabCoutFormation.style.display = tab === 'cout-formation' ? '' : 'none';
       tabIntegration.style.display = tab === 'integration' ? '' : 'none';
+      tabSuivis.style.display = tab === 'suivis' ? '' : 'none';
       tabCertification.style.display = tab === 'certification' ? '' : 'none';
       tabCertificationRz.style.display = tab === 'certification-rz' ? '' : 'none';
       tabAlternant.style.display = tab === 'alternant' ? '' : 'none';
-      statsWrap.style.display = (tab === 'polyvalence' || tab === 'comparaison' || tab === 'activite' || tab === 'planification' || tab === 'cout-formation' || tab === 'integration' || tab === 'certification' || tab === 'certification-rz' || tab === 'alternant') ? 'none' : '';
+      statsWrap.style.display = (tab === 'polyvalence' || tab === 'comparaison' || tab === 'activite' || tab === 'planification' || tab === 'cout-formation' || tab === 'integration' || tab === 'suivis' || tab === 'certification' || tab === 'certification-rz' || tab === 'alternant') ? 'none' : '';
       statsRowEl.style.display = tab === 'formations' ? '' : 'none';
       statsRowGestionEl.style.display = tab === 'gestion' ? '' : 'none';
       if(tab === 'comparaison'){ renderComparaisonCharts(); renderComparaison(); }
@@ -4607,6 +4648,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         initIntegrationTab();
       }
       if(tab === 'certification'){ initCertifTab(); }
+      if(tab === 'suivis'){ initSuivisTab(); }
       if(tab === 'certification-rz'){ initRzTab(); }
       if(tab === 'alternant' && !alternantLoadedOnce){
         alternantLoadedOnce = true;
@@ -6804,6 +6846,339 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       </body></html>`);
     win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
   }
+
+  // ---------------- Suivis à 4 semaines / 60 jours : grille, bilan de fin d'année, débrief IA ----------------
+  //  Les réponses du nouvel équipier servent à mesurer notre accueil et notre formation (pas à le noter lui).
+  //  Question « mesurable » : OUI = 100 %, PARTIELLEMENT = 50 %, NON = 0 ; question « libre » : texte seulement.
+  const SU_GRILLE_DEFAUT = {
+    q30: [
+      { t: 'Quelles tâches maîtrises-tu complètement ? Lesquelles te posent encore des difficultés ?', m: false },
+      { t: "Te sens-tu accompagné par l'équipe ?", m: true },
+      { t: "As-tu reçu des retours sur ton travail ? Si oui, étaient-ils clairs et constructifs ?", m: true },
+      { t: 'Y a-t-il des choses que tu aurais aimé savoir plus tôt ?', m: false },
+      { t: 'As-tu rencontré des situations inattendues, difficultés particulières dans certaines situations (rush, gestion client, etc.) ?', m: false }
+    ],
+    q60: [
+      { t: "Qu'est-ce qui t'a le plus surpris (positivement ou négativement) ?", m: false },
+      { t: 'Te sens-tu autonome dans l\'ensemble de tes missions ?', m: true },
+      { t: "Connais-tu les possibilités d'évolution ? Si oui, vers quel type de poste ou de responsabilités ?", m: true },
+      { t: 'Quelles formations souhaiterais-tu faire ?', m: false },
+      { t: "Qu'est-ce que tu as retenu de la formation à la culture service ? Et qu'appliques-tu au quotidien ?", m: true }
+    ],
+    criteres: ['Fiabilité (absentéisme / retard notamment)', 'Respect des procédures et des consignes', 'Culture service : attitude clients / collègues', 'Travail en équipe', 'Hygiène et sécurité'],
+    conclusions: ["Des améliorations sont attendues rapidement pour valider la période d'essai", "Le travail fourni correspond aux demandes pour la validation de la période d'essai"]
+  };
+  const SU_NIVEAUX = ['Insuffisant', 'Satisfaisant', 'Très satisfaisant'];
+  const SU_LAB = { j30: 'Suivi à 4 semaines', j60: 'Suivi à 60 jours' };
+  let suGrille = null, suSuivis = [], suLoaded = false, suAnnee = String(new Date().getFullYear()), suFilter = 'todo', suGrid = null, suDebrief = null, suBusy = false;
+  const suivisWrap = document.getElementById('suivisWrap');
+
+  const suForm = () => {
+    const g = suGrille || {};
+    const q = (a, d) => (Array.isArray(a) && a.length ? a.map(x => typeof x === 'string' ? { t: x, m: true } : { t: String(x.t || ''), m: x.m !== false }) : JSON.parse(JSON.stringify(d)));
+    return { q30: q(g.q30, SU_GRILLE_DEFAUT.q30), q60: q(g.q60, SU_GRILLE_DEFAUT.q60),
+      criteres: Array.isArray(g.criteres) && g.criteres.length ? g.criteres.slice() : SU_GRILLE_DEFAUT.criteres.slice(),
+      conclusions: Array.isArray(g.conclusions) && g.conclusions.length ? g.conclusions.slice() : SU_GRILLE_DEFAUT.conclusions.slice() };
+  };
+  const suPts = v => v === 'OUI' ? 1 : (v === 'PARTIELLEMENT' ? 0.5 : (v === 'NON' ? 0 : null));
+  const suCls = n => n === null ? 'gray' : (n >= 80 ? 'green' : (n >= 60 ? 'amber' : 'red'));
+  const suLegende = 'Vert ≥ 80 % · orange ≥ 60 % · rouge en dessous';
+  const suRecDe = (nom, type) => suSuivis.find(s => s.nom === nom && s.type === type) || null;
+  async function suCall(corps, quiet){
+    try{
+      const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody(Object.assign({ targetRestaurant: currentRestaurant }, corps))) });
+      const d = await res.json();
+      if(!d.ok) throw new Error(d.error || 'Échec');
+      return d;
+    } catch(err){ if(!quiet) alert('Erreur : ' + err.message); return null; }
+  }
+  // Calcul d'un suivi : satisfaction sur les questions mesurables répondues.
+  function suCalc(rep, form, type){
+    const qs = form[type === 'j30' ? 'q30' : 'q60'], Q = [];
+    let p = 0, b = 0;
+    qs.forEach((q, i) => {
+      const k = (type === 'j30' ? '30' : '60') + '-' + i, v = q.m ? (rep['a' + k] || '') : '';
+      const sc = q.m ? suPts(v) : null;
+      if(sc !== null){ p += sc; b += 1; }
+      Q.push({ k, t: q.t, m: q.m, v });
+    });
+    return { Q, p, b, pct: b ? (p / b) * 100 : null };
+  }
+
+  function suLignes(){
+    const today = fmIso(new Date()), lignes = [];
+    restaurantEmployees().filter(e => e.dateEntree && e.suivi4sButoir !== undefined).forEach(e => {
+      [['j30', 'suivi4sButoir', 'suivi4sFait', d => addMonthsJS(d, 1)], ['j60', 'suivi60jButoir', 'suivi60jFait', d => addDaysJS(d, 60)]].forEach(([type, bk, fk, calc]) => {
+        const ech = String(e[bk] || calc(e.dateEntree)).slice(0, 10);
+        const rec = suRecDe(e.nom, type);
+        if(!(rec && rec.date ? rec.date.slice(0, 4) === suAnnee : ech.slice(0, 4) === suAnnee)) return;
+        const fait = !!(rec && rec.date), faitSite = !!e[fk];
+        const statut = fait ? 'fait' : (faitSite ? 'sans' : (ech < today ? 'retard' : 'avenir'));
+        lignes.push({ emp: e, type, ech, rec, fait, statut });
+      });
+    });
+    lignes.sort((a, b) => a.ech.localeCompare(b.ech) || displayName(a.emp.nom).localeCompare(displayName(b.emp.nom), 'fr'));
+    return lignes;
+  }
+
+  // Bilan de l'année : tout est recalculé à partir des suivis enregistrés.
+  function suBilan(){
+    const recs = suSuivis.filter(s => s.date && s.date.slice(0, 4) === suAnnee && s.resume && s.resume.Q);
+    const parQ = {}, parF = {};
+    recs.forEach(r => {
+      r.resume.Q.forEach(q => {
+        const k = r.type + '||' + q.t; const x = parQ[k] || (parQ[k] = { type: r.type, t: q.t, m: q.m, oui: 0, par: 0, non: 0, n: 0, coms: [] });
+        if(q.m && suPts(q.v) !== null){ x.n++; if(q.v === 'OUI') x.oui++; else if(q.v === 'NON') x.non++; else x.par++; }
+        if(r.coms && r.coms[q.k]) x.coms.push({ txt: r.coms[q.k], par: r.par });
+      });
+      const f = r.par || 'Non précisé'; const y = parF[f] || (parF[f] = { nb: 0, p: 0, b: 0 });
+      y.nb++; if(r.resume.b){ y.p += r.resume.p; y.b += r.resume.b; }
+    });
+    const qs = Object.values(parQ).map(x => Object.assign(x, { pct: x.n ? ((x.oui + x.par * 0.5) / x.n) * 100 : null }));
+    return { recs, qs, parF };
+  }
+
+  function suRender(){
+    if(!suivisWrap) return;
+    if(!suLoaded){ return; }
+    const form = suForm();
+    const annees = []; for(let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 2; y--) annees.push(String(y));
+    const all = suLignes(), cnt = k => all.filter(l => l.statut === k).length;
+    const lignes = all.filter(l => suFilter === 'all' || (suFilter === 'done' ? l.fait : !l.fait));
+    const pill = { retard:['red', 'En retard'], avenir:['gray', 'À venir'], sans:['amber', 'Fait · sans grille'], fait:['green', 'Réalisé'] };
+    const rows = lignes.map(l => {
+      const safe = rzEsc(l.emp.nom), r = l.rec, p = r ? parseFloat(r.pct) : NaN;
+      const btn = (lab, ro, cls) => `<button type="button" class="rz-grid-btn ${cls || ''}" data-su-nom="${safe}" data-su-type="${l.type}" data-su-ro="${ro ? 1 : 0}">${lab}</button>`;
+      return `<tr class="${l.statut === 'retard' ? 'rz-plan-row-late' : (l.fait ? 'rz-plan-row-done' : '')}">
+        <td><b>${displayName(l.emp.nom)}</b></td><td>${SU_LAB[l.type]}</td><td>${fmFr(l.ech)}</td>
+        <td><span class="action-pill ${pill[l.statut][0]}">${pill[l.statut][1]}</span></td>
+        <td>${l.fait ? fmFr(r.date) : '—'}</td><td>${l.fait ? rzEsc(r.par || '—') : '—'}</td>
+        <td>${l.fait ? (isNaN(p) ? '—' : `<span class="action-pill ${suCls(p)}">${rzFmtPct(p)}</span>`) : '—'}</td>
+        <td><div style="display:flex;flex-direction:column;align-items:center;gap:8px;">${btn('📝 Grille', false)}${l.fait ? btn('👁️ Consulter', true, 'rz-view-btn') : ''}</div></td></tr>`;
+    }).join('');
+    const B = suBilan(), nb30 = B.recs.filter(r => r.type === 'j30').length, nb60 = B.recs.filter(r => r.type === 'j60').length;
+    let P = 0, N = 0; B.qs.forEach(q => { if(q.m && q.n){ P += q.oui + q.par * 0.5; N += q.n; } });
+    const globale = N ? (P / N) * 100 : null;
+    const mesurables = B.qs.filter(q => q.m && q.n).sort((a, b) => b.pct - a.pct);
+    const forts = mesurables.filter(q => q.pct >= 80).slice(0, 3), faibles = mesurables.slice().reverse().filter(q => q.pct < 80).slice(0, 3);
+    const li = (q, t) => `<li>${rzEsc(q.t)} <span class="action-pill ${suCls(q.pct)}">${rzFmtPct(q.pct)}</span> <span class="certif-sub" style="display:inline;">${t} · ${q.n} réponse${q.n > 1 ? 's' : ''}</span></li>`;
+    const tabQ = ['j30', 'j60'].map(t => {
+      const lst = B.qs.filter(q => q.type === t && q.m);
+      if(!lst.length) return '';
+      return `<h5 class="su-h5">${SU_LAB[t]}</h5><div class="matrix-wrap"><table class="matrix-table"><thead><tr><th style="text-align:left;">Question</th><th>OUI</th><th>PARTIEL</th><th>NON</th><th>Réponses</th><th>Satisfaction</th></tr></thead><tbody>${lst.map(q => { const pc = x => q.n ? rzFmtPct(x / q.n * 100) : '—'; return `<tr><td style="text-align:left;">${rzEsc(q.t)}</td><td>${pc(q.oui)}</td><td>${pc(q.par)}</td><td>${pc(q.non)}</td><td>${q.n}</td><td><span class="action-pill ${suCls(q.pct)}">${rzFmtPct(q.pct)}</span></td></tr>`; }).join('')}</tbody></table></div>`;
+    }).join('');
+    const formateurs = Object.keys(B.parF).sort((a, b) => a.localeCompare(b, 'fr'));
+    const tabF = formateurs.length ? `<h5 class="su-h5">Par formateur</h5><div class="matrix-wrap"><table class="matrix-table"><thead><tr><th style="text-align:left;">Formateur</th><th>Suivis réalisés</th><th>Satisfaction moyenne</th></tr></thead><tbody>${formateurs.map(f => { const y = B.parF[f], pc = y.b ? y.p / y.b * 100 : null; return `<tr><td style="text-align:left;"><b>${rzEsc(displayName(f))}</b></td><td>${y.nb}</td><td>${pc === null ? '—' : `<span class="action-pill ${suCls(pc)}">${rzFmtPct(pc)}</span>`}</td></tr>`; }).join('')}</tbody></table></div>` : '';
+    const comsParQ = B.qs.filter(q => q.coms.length);
+    const tabC = comsParQ.length ? `<h5 class="su-h5">Ce que disent les équipiers</h5>${['j30', 'j60'].map(t => comsParQ.filter(q => q.type === t).map(q => `<details class="su-com"><summary>${rzEsc(q.t)} <span class="certif-sub" style="display:inline;">(${q.coms.length})</span></summary><ul>${q.coms.map(c => `<li>${rzEsc(c.txt)}${c.par ? ` <span class="certif-sub" style="display:inline;">— suivi par ${rzEsc(displayName(c.par))}</span>` : ''}</li>`).join('')}</ul></details>`).join('')).join('')}` : '';
+    const deb = suDebrief && suDebrief.texte
+      ? `<div class="su-debrief">${rzEsc(suDebrief.texte)}</div><p class="certif-sub">Débrief généré le ${fmFr(suDebrief.date)} par l'IA à partir des suivis de ${suAnnee}. Les noms des équipiers ne lui sont pas transmis. À relire avant de le partager.</p>`
+      : `<p class="certif-sub">Aucun débrief généré pour ${suAnnee}.</p>`;
+    suivisWrap.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+        <label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Afficher :
+          <select id="suFilter" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;"><option value="todo"${suFilter === 'todo' ? ' selected' : ''}>Reste à faire</option><option value="done"${suFilter === 'done' ? ' selected' : ''}>Déjà réalisés</option><option value="all"${suFilter === 'all' ? ' selected' : ''}>Tout</option></select></label>
+        <label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Année :
+          <select id="suAnnee" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">${annees.map(a => `<option value="${a}"${a === suAnnee ? ' selected' : ''}>${a}</option>`).join('')}</select></label>
+        <button type="button" class="rz-grid-btn" id="suEditGrid">⚙️ Modifier la grille des suivis</button></div>
+      <h4 class="rz-block-title">Suivis à 4 semaines et à 60 jours <span>(${cnt('retard')} en retard · ${cnt('avenir')} à venir · ${cnt('sans')} sans grille · ${cnt('fait')} réalisé${cnt('fait') > 1 ? 's' : ''})</span></h4>
+      ${!all.length ? '<p style="color:var(--ink-soft);font-size:13px;">Aucun suivi prévu en ' + suAnnee + '.</p>' : (!lignes.length ? '<p style="color:var(--ink-soft);font-size:13px;">Rien à afficher avec ce filtre.</p>' : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr><th>Équipier</th><th>Suivi</th><th data-tip="Date limite : 1 mois (4 semaines) ou 60 jours après l'entrée">Échéance</th><th>Statut</th><th>Réalisé le</th><th>Réalisé par</th><th data-tip="Part de réponses positives de l'équipier aux questions de la grille">Satisfaction</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`)}
+      <h4 class="rz-block-title" style="margin-top:26px;">Bilan ${suAnnee} de notre accueil et de notre formation <span>(${nb30} suivi${nb30 > 1 ? 's' : ''} à 4 semaines · ${nb60} à 60 jours)</span></h4>
+      ${!B.recs.length ? '<p style="color:var(--ink-soft);font-size:13px;">Le bilan apparaît dès qu\'un suivi est enregistré avec sa grille.</p>' : `
+        <div class="su-kpis"><div class="su-kpi"><span>Satisfaction globale</span><b><span class="action-pill ${suCls(globale)}" style="font-size:16px;">${rzFmtPct(globale)}</span></b></div><div class="su-kpi"><span>Suivis réalisés</span><b>${B.recs.length}</b></div></div>
+        <p class="certif-sub">${suLegende}</p>
+        <div class="su-duo"><div><h5 class="su-h5">✅ Points forts de notre formation</h5>${forts.length ? `<ul>${forts.map(q => li(q, 'bien noté')).join('')}</ul>` : '<p class="certif-sub">Pas encore de question à 80 % ou plus.</p>'}</div>
+        <div><h5 class="su-h5">🎯 Axes d'amélioration</h5>${faibles.length ? `<ul>${faibles.map(q => li(q, 'à améliorer')).join('')}</ul>` : '<p class="certif-sub">Toutes les questions sont à 80 % ou plus.</p>'}</div></div>
+        ${tabQ}${tabF}${tabC}`}
+      <h4 class="rz-block-title" style="margin-top:26px;">Débrief de l'année rédigé par l'IA</h4>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"><button type="button" class="rz-grid-btn" id="suDebriefBtn"${suBusy ? ' disabled' : ''}>${suBusy ? '⏳ Rédaction en cours…' : (suDebrief && suDebrief.texte ? '✨ Régénérer le débrief' : '✨ Générer le débrief de l\'année')}</button>${suDebrief && suDebrief.texte ? '<button type="button" class="rz-grid-btn" id="suDebriefCopy">📋 Copier le texte</button>' : ''}</div>
+      ${deb}`;
+    document.getElementById('suFilter').addEventListener('change', e => { suFilter = e.target.value; suRender(); });
+    document.getElementById('suAnnee').addEventListener('change', async e => { suAnnee = e.target.value; suDebrief = null; suRender(); suChargerDebrief(); });
+    document.getElementById('suEditGrid').addEventListener('click', suEdOpen);
+    document.getElementById('suDebriefBtn').addEventListener('click', suGenererDebrief);
+    const cp = document.getElementById('suDebriefCopy'); if(cp) cp.addEventListener('click', () => { navigator.clipboard.writeText(suDebrief.texte); cp.textContent = '✓ Copié'; });
+    suivisWrap.querySelectorAll('button[data-su-type]').forEach(b => b.addEventListener('click', () => suOpen(b.dataset.suNom, b.dataset.suType, b.dataset.suRo === '1')));
+  }
+  async function suChargerDebrief(){
+    const d = await suCall({ sheet:'get_debrief_suivis', annee: suAnnee }, true);
+    if(d && d.debrief){ suDebrief = d.debrief; suRender(); }
+  }
+  async function suGenererDebrief(){
+    if(suBusy) return;
+    if(!confirm('Générer le débrief ' + suAnnee + ' ? Les réponses et commentaires des suivis (sans les noms des équipiers) sont transmis à l\'IA Claude pour rédiger le texte.')) return;
+    suBusy = true; suRender();
+    const d = await suCall({ sheet:'generer_debrief_suivis', annee: suAnnee });
+    suBusy = false;
+    if(d && d.debrief) suDebrief = d.debrief;
+    suRender();
+  }
+  async function suInit(){
+    suLoaded = false;
+    const d = await suCall({ sheet:'get_suivis_integration' }, true);
+    if(!d){ suivisWrap.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Les suivis 4 semaines / 60 jours seront disponibles après la mise à jour du serveur.</p>'; return; }
+    suSuivis = d.suivis || []; suGrille = d.grille || null; suLoaded = true;
+    suRender();
+    suChargerDebrief();
+  }
+
+  // ---- Fenêtre d'un suivi ----
+  async function suOpen(nom, type, ro){
+    const d = await suCall({ sheet:'get_suivi_integration', nom, type });
+    if(!d) return;
+    const ev = d.suivi, rep = (ev && ev.reponses) || {};
+    const form = rep._grille ? (() => { const g = rep._grille; const q = a => (a || []).map(x => typeof x === 'string' ? { t: x, m: true } : x); return { q30: q(g.q30), q60: q(g.q60), criteres: g.criteres || [], conclusions: g.conclusions || [] }; })() : suForm();
+    delete rep._grille;
+    suGrid = { nom, type, ro, rep, form, ev };
+    suDraw();
+    rzGridModal.style.display = '';
+  }
+  function suDraw(){
+    const g = suGrid, ro = g.ro, rep = g.rep, form = g.form, type = g.type, p30 = type === 'j30', pre = p30 ? '30' : '60';
+    const emp = restaurantEmployees().find(e => e.nom === g.nom);
+    const dateInit = (g.ev && g.ev.date) || fmIso(new Date());
+    const parInit = (g.ev && g.ev.par) || (isGerant ? '' : (sessionFormateur || ''));
+    document.getElementById('rzGridTitle').textContent = displayName(g.nom) + ' — ' + SU_LAB[type];
+    const qs = form[p30 ? 'q30' : 'q60'];
+    const opt = (cur, lst, ph) => `<option value="">${ph}</option>` + lst.map(x => `<option value="${rzEsc(x)}"${cur === x ? ' selected' : ''}>${rzEsc(x)}</option>`).join('');
+    const body = `<p class="modal-sub" style="margin-top:0;">${p30 ? 'Le salarié fait partie de l\'équipe depuis un mois : bilan d\'intégration, montée en compétences et leviers de fidélisation.' : 'Retour d\'expérience sur la qualité de son intégration, ses sources de motivation et sa projection dans le restaurant.'}</p>
+      <div class="rz-head-fields">
+        <label>Équipier<input type="text" value="${rzEsc(displayName(g.nom))}" disabled></label>
+        <label>Date d'entrée<input type="text" value="${emp && emp.dateEntree ? fmFr(emp.dateEntree.slice(0, 10)) : '—'}" disabled></label>
+        <label>Date du suivi<input type="date" id="suDate" value="${rzEsc(dateInit)}"${ro ? ' disabled' : ''}></label>
+        <label>Réalisé par<input type="text" id="suPar" value="${rzEsc(parInit)}" maxlength="80" placeholder="Nom du formateur"${ro ? ' disabled' : ''}></label></div>
+      <div class="rz-sec"><div class="rz-sec-head"><h4>Questions à l'équipier</h4><span class="action-pill gray" id="suSecPct">—</span></div>
+        ${qs.map((q, i) => `<div class="rz-line" style="flex-wrap:wrap;"><div class="rz-line-txt">${rzEsc(q.t)}</div>${q.m ? `<div class="rz-opts">${FM_OPTS.map(([val, lab]) => `<label class="rz-opt rz-opt-${val === 'PARTIELLEMENT' ? 'E' : val}"><input type="radio" name="su_${pre}_${i}" value="${val}" data-a="${pre}-${i}"${rep['a' + pre + '-' + i] === val ? ' checked' : ''}${ro ? ' disabled' : ''}><span>${lab}</span></label>`).join('')}</div>` : ''}
+          <input type="text" class="rz-line-com" style="flex-basis:100%;" data-c="${pre}-${i}" value="${rzEsc(rep['c' + pre + '-' + i] || '')}" maxlength="600" placeholder="${q.m ? 'Ce que l\'équipier a répondu (commentaire)' : 'Réponse de l\'équipier'}"${ro ? ' disabled' : ''}></div>`).join('')}</div>
+      ${p30 ? `<div class="rz-sec"><div class="rz-sec-head"><h4>Critères d'évaluation de la période d'essai</h4></div>
+        ${form.criteres.map((c, i) => `<div class="rz-line"><div class="rz-line-txt">${i + 1}. ${rzEsc(c)}</div><select data-k="${i}" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;"${ro ? ' disabled' : ''}>${opt(rep['k' + i] || '', SU_NIVEAUX, '—')}</select></div>`).join('')}
+        <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:10px;">Conclusion de la période d'essai (30 jours)<select id="suConclusion" style="display:block;width:100%;margin-top:4px;font:inherit;font-size:13px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;"${ro ? ' disabled' : ''}>${opt(rep.conclusion || '', form.conclusions, '—')}</select></label></div>` : ''}
+      <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires (${p30 ? '30' : '60'} jours)${fmTa('suCom', g.ev && g.ev.commentaire, '', ro, 3)}</label>
+      <div class="modal-error" id="suError" style="display:none;"></div>
+      <div class="modal-actions"><button type="button" id="suCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="suPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button>${ro ? '<button type="button" id="suEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="suSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
+    document.getElementById('rzGridContent').innerHTML = body;
+    const M = rzGridModal;
+    M.querySelectorAll('input[type=radio][data-a]').forEach(r => r.addEventListener('change', () => { rep['a' + r.dataset.a] = r.value; suRefresh(); }));
+    M.querySelectorAll('.rz-line-com[data-c]').forEach(i => i.addEventListener('input', () => { rep['c' + i.dataset.c] = i.value; }));
+    M.querySelectorAll('select[data-k]').forEach(s => s.addEventListener('change', () => { rep['k' + s.dataset.k] = s.value; }));
+    const cc = document.getElementById('suConclusion'); if(cc) cc.addEventListener('change', () => { rep.conclusion = cc.value; });
+    document.getElementById('suCancel').addEventListener('click', suClose);
+    document.getElementById('suPdf').addEventListener('click', suPdf);
+    if(ro) document.getElementById('suEdit').addEventListener('click', () => { g.ro = false; suDraw(); });
+    else document.getElementById('suSave').addEventListener('click', suSave);
+    suRefresh();
+  }
+  function suClose(){ rzGridModal.style.display = 'none'; suGrid = null; rzGrid = null; }
+  function suRefresh(){
+    const g = suGrid, r = suCalc(g.rep, g.form, g.type), e = document.getElementById('suSecPct');
+    if(e){ e.className = 'action-pill ' + suCls(r.pct); e.textContent = r.b ? 'Satisfaction ' + rzFmtPct(r.pct) : '—'; }
+  }
+  async function suSave(){
+    const g = suGrid, err = document.getElementById('suError'); err.style.display = 'none';
+    const date = document.getElementById('suDate').value;
+    if(!date){ err.textContent = 'Renseigne la date du suivi.'; err.style.display = 'block'; return; }
+    const r = suCalc(g.rep, g.form, g.type);
+    const C = g.type === 'j30' ? g.form.criteres.map((t, i) => ({ t, v: g.rep['k' + i] || '' })) : [];
+    const reponses = Object.assign({}, g.rep, { _grille: g.form });
+    const com = (document.getElementById('suCom') || { value: '' }).value.trim();
+    const btn = document.getElementById('suSave'); btn.disabled = true;
+    const d = await suCall({ sheet:'save_suivi_integration', nom: g.nom, type: g.type, date, par: document.getElementById('suPar').value.trim(), pct: r.pct === null ? '' : Math.round(r.pct * 10) / 10, reponses, resume: { p: r.p, b: r.b, Q: r.Q, C }, commentaire: com });
+    if(d){ suSuivis = d.suivis || suSuivis; suClose(); suRender(); } else btn.disabled = false;
+  }
+  function suPdf(){
+    const g = suGrid; if(!g) return;
+    const form = g.form, rep = g.rep, p30 = g.type === 'j30', pre = p30 ? '30' : '60', qs = form[p30 ? 'q30' : 'q60'];
+    const dateV = (document.getElementById('suDate') || {}).value, parV = ((document.getElementById('suPar') || {}).value || '').trim(), comV = ((document.getElementById('suCom') || {}).value || '').trim();
+    const r = suCalc(rep, form, g.type);
+    const emp = restaurantEmployees().find(e => e.nom === g.nom);
+    const rep2 = v => v ? `<span class="r-${v === 'OUI' ? 'OUI' : (v === 'NON' ? 'NON' : 'E')}">${v === 'PARTIELLEMENT' ? 'PARTIEL' : v}</span>` : '';
+    const win = window.open('', '_blank');
+    if(!win){ alert('Autorise les fenêtres pop-up pour exporter le PDF.'); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${rzEsc(SU_LAB[g.type])} — ${rzEsc(displayName(g.nom))}</title><style>
+      *{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      body{ font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; padding:22px; font-size:12px; }
+      h1{ font-size:22px; margin:0; color:#fff; background:#1e5c3a; padding:14px 22px; border-radius:16px; }
+      .rule{ height:5px; background:#ffc72c; margin:9px 0 14px; border-radius:3px; }
+      .meta{ display:flex; gap:26px; flex-wrap:wrap; margin-bottom:10px; font-size:12.5px; }
+      h3{ font-size:13px; color:#fff; background:#1e5c3a; border-radius:10px; padding:7px 12px; margin:18px 0 6px; border-bottom:3px solid #ffc72c; }
+      table{ width:100%; border-collapse:collapse; } tr{ page-break-inside:avoid; }
+      td{ padding:6px 9px; vertical-align:top; } tr:nth-child(even) td{ background:#e8f1e8; }
+      td.rc{ width:110px; text-align:center; font-weight:700; } .r-OUI{ color:#1b7a3d; } .r-E{ color:#b86e00; } .r-NON{ color:#c0392b; }
+      .com{ margin:4px 0 8px; white-space:pre-wrap; border:1px solid #b9cdbd; border-radius:10px; padding:9px; min-height:34px; }
+      </style></head><body>
+      <h1>${rzEsc(SU_LAB[g.type])}</h1><div class="rule"></div>
+      <div class="meta"><span><b>Équipier :</b> ${rzEsc(displayName(g.nom))}</span><span><b>Date d'entrée :</b> ${emp && emp.dateEntree ? fmFr(emp.dateEntree.slice(0, 10)) : '—'}</span><span><b>Date du suivi :</b> ${fmFr(dateV)}</span><span><b>Réalisé par :</b> ${rzEsc(parV || '—')}</span></div>
+      <h3>Questions à l'équipier</h3><table>${qs.map((q, i) => `<tr><td>${rzEsc(q.t)}<div style="font-style:italic;color:#444;margin-top:3px;">${rzEsc(rep['c' + pre + '-' + i] || '')}</div></td><td class="rc">${q.m ? rep2(rep['a' + pre + '-' + i]) : ''}</td></tr>`).join('')}</table>
+      ${p30 ? `<h3>Critères d'évaluation de la période d'essai</h3><table>${form.criteres.map((c, i) => `<tr><td>${i + 1}. ${rzEsc(c)}</td><td class="rc">${rzEsc(rep['k' + i] || '—')}</td></tr>`).join('')}</table><p><b>Conclusion :</b> ${rzEsc(rep.conclusion || '—')}</p>` : ''}
+      <b>Commentaires</b><div class="com">${rzEsc(comV)}</div>
+      <table style="margin-top:24px;"><tr><td style="background:none;">Signature du formateur<br><br><br></td><td style="background:none;">Signature de l'employé<br><br><br></td></tr></table></body></html>`);
+    win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
+  }
+
+  // ---- Éditeur de la grille (même présentation que l'éditeur des grilles de certification) ----
+  const suEdModal = document.getElementById('suEdModal');
+  let suEd = null; // { form }
+  const SU_ED_SECS = [
+    { k: 'q30', titre: 'Questions du suivi à 4 semaines', q: true, ph: 'Question posée à l\'équipier' },
+    { k: 'q60', titre: 'Questions du suivi à 60 jours', q: true, ph: 'Question posée à l\'équipier' },
+    { k: 'criteres', titre: 'Critères d\'évaluation de la période d\'essai (Insuffisant / Satisfaisant / Très satisfaisant)', ph: 'Critère' },
+    { k: 'conclusions', titre: 'Conclusions possibles de la période d\'essai', ph: 'Conclusion' }
+  ];
+  function suEdOpen(){
+    suEd = { form: JSON.parse(JSON.stringify(suForm())) };
+    document.getElementById('suEdError').style.display = 'none';
+    suEdRender();
+    suEdModal.style.display = '';
+  }
+  function suEdRender(){
+    const f = suEd.form, card = suEdModal.querySelector('.modal-card'), sc = card.scrollTop;
+    document.getElementById('suEdBody').innerHTML = SU_ED_SECS.map(s => `<div class="rz-ed-sec">
+      <div class="rz-ed-sec-head"><span style="color:#fff;font-weight:800;">${rzEsc(s.titre)}</span></div>
+      ${f[s.k].map((l, i) => `<div class="rz-ed-line">
+        <input type="text" class="rz-ed-in" data-k="${s.k}" data-i="${i}" value="${rzEsc(s.q ? l.t : l)}" placeholder="${s.ph}" maxlength="400">
+        ${s.q ? `<label class="rz-ed-coef">Réponse <select class="rz-ed-in" data-k="${s.k}" data-i="${i}" data-m="1"><option value="1" ${l.m ? 'selected' : ''}>OUI / PARTIEL / NON</option><option value="0" ${l.m ? '' : 'selected'}>Libre (texte seul)</option></select></label>` : ''}
+        <span class="rz-ed-btns"><button type="button" data-act="up" data-k="${s.k}" data-i="${i}" title="Monter" ${i === 0 ? 'disabled' : ''}>▲</button><button type="button" data-act="dn" data-k="${s.k}" data-i="${i}" title="Descendre" ${i === f[s.k].length - 1 ? 'disabled' : ''}>▼</button><button type="button" data-act="del" data-k="${s.k}" data-i="${i}" title="Supprimer">🗑️</button></span>
+      </div>`).join('')}
+      <button type="button" class="rz-grid-btn" data-act="add" data-k="${s.k}">＋ Ajouter ${s.q ? 'une question' : (s.k === 'criteres' ? 'un critère' : 'une conclusion')}</button>
+    </div>`).join('');
+    card.scrollTop = sc;
+    const body = document.getElementById('suEdBody');
+    body.querySelectorAll('input.rz-ed-in').forEach(inp => inp.addEventListener('input', () => {
+      const a = f[inp.dataset.k], i = +inp.dataset.i;
+      if(typeof a[i] === 'string') a[i] = inp.value; else a[i].t = inp.value;
+    }));
+    body.querySelectorAll('select[data-m]').forEach(sel => sel.addEventListener('change', () => { f[sel.dataset.k][+sel.dataset.i].m = sel.value === '1'; }));
+    body.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', () => {
+      const a = f[b.dataset.k], i = +b.dataset.i, act = b.dataset.act, s = SU_ED_SECS.find(x => x.k === b.dataset.k);
+      const mv = d => { const j = i + d; if(j >= 0 && j < a.length){ const t = a[i]; a[i] = a[j]; a[j] = t; } };
+      if(act === 'up') mv(-1); else if(act === 'dn') mv(1);
+      else if(act === 'del'){ if(a.length <= 1) return; a.splice(i, 1); }
+      else if(act === 'add') a.push(s.q ? { t: '', m: true } : '');
+      suEdRender();
+    }));
+  }
+  function suEdClose(){ suEdModal.style.display = 'none'; suEd = null; }
+  document.getElementById('suEdClose').addEventListener('click', suEdClose);
+  document.getElementById('suEdCancel').addEventListener('click', suEdClose);
+  document.getElementById('suEdReset').addEventListener('click', () => {
+    if(!suEd || !confirm('Revenir à la grille d\'origine ? Tes modifications non enregistrées seront perdues.')) return;
+    suEd.form = JSON.parse(JSON.stringify(SU_GRILLE_DEFAUT)); suEdRender();
+  });
+  document.getElementById('suEdSave').addEventListener('click', async () => {
+    if(!suEd) return;
+    const err = document.getElementById('suEdError'), f = suEd.form;
+    const bad = m => { err.textContent = m; err.style.display = 'block'; };
+    err.style.display = 'none';
+    for(const s of SU_ED_SECS){
+      if(!f[s.k].length) return bad('La section « ' + s.titre + ' » doit contenir au moins une ligne.');
+      if(f[s.k].some(l => !String(s.q ? l.t : l).trim())) return bad('Une ligne de la section « ' + s.titre + ' » est vide.');
+    }
+    const cl = a => a.map(l => typeof l === 'string' ? l.trim() : { t: l.t.trim(), m: !!l.m });
+    const g = { q30: cl(f.q30), q60: cl(f.q60), criteres: cl(f.criteres), conclusions: cl(f.conclusions) };
+    const d = await suCall({ sheet:'save_grille_suivis', grille: g });
+    if(d){ suGrille = d.grille; suEdClose(); suRender(); }
+  });
+  function initSuivisTab(){ suInit(); }
 
   async function initRzTab(){
     rzWrapProb.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Chargement…</p>';
