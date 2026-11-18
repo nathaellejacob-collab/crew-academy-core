@@ -6420,7 +6420,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     rzEditModal.style.display = '';
   }
   function rzEdBtns(act, i, n, extra){
-    return `<span class="rz-ed-btns"><button type="button" data-act="${act}del" ${extra} title="Supprimer">🗑️</button></span>`;
+    return `<span class="rz-ed-btns"><button type="button" data-act="${act}up" ${extra} title="Monter" ${i === 0 ? 'disabled' : ''}>▲</button><button type="button" data-act="${act}dn" ${extra} title="Descendre" ${i === n - 1 ? 'disabled' : ''}>▼</button><button type="button" data-act="${act}del" ${extra} title="Supprimer">🗑️</button></span>`;
   }
   function rzEdRender(){
     const f = rzEd.form, kind = rzEd.kind, card = rzEditModal.querySelector('.modal-card'), sc = card.scrollTop;
