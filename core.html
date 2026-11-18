@@ -158,6 +158,15 @@
   #rzTab table.matrix-table thead th, #rzTab table.matrix-table td{text-align:center; vertical-align:middle;}
   .rz-block-title{font-size:15px; font-weight:800; margin:22px 0 10px; color:var(--ink);}
   .rz-block-title span{color:var(--ink-soft); font-weight:600; font-size:13px;}
+  .rz-plan-row-late td{background:#fdf0ee;} .rz-plan-row-done td{color:var(--ink-soft);}
+  .rz-kpi-btn{font:inherit; cursor:pointer; text-align:center; background:#fff; border:1px solid var(--line);} .rz-kpi-btn.active{outline:2px solid var(--navy);}
+  .rz-bubbles{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:10px;}
+  .rz-bubble{border:1px solid var(--line); border-left:7px solid #8a8f98; border-radius:12px; background:#fff; overflow:hidden;}
+  .rz-bubble.open{grid-column:1 / -1;}
+  .rz-b-retard{border-left-color:var(--red);} .rz-b-aplanifier{border-left-color:var(--amber);} .rz-b-planifie{border-left-color:#8a8f98;} .rz-b-fait{border-left-color:var(--green);}
+  .rz-bubble-head{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px 14px; cursor:pointer; width:100%; background:none; border:none; font:inherit; text-align:left;}
+  .rz-bubble-head b{font-size:14px; color:var(--ink);} .rz-bubble-pills{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
+  .rz-bubble-body{display:none; padding:0 12px 12px;} .rz-bubble.open .rz-bubble-body{display:block;}
   .rz-head-fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin:10px 0 6px;}
   .rz-head-fields label{font-size:11.5px; font-weight:700; color:var(--ink-soft); display:block;}
   .rz-head-fields input{display:block; width:100%; margin-top:4px; font:inherit; font-size:13px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff;}
@@ -1646,7 +1655,7 @@
   <div class="panel-block" id="rzTab">
     <div class="panel-head">
       <h3>🧭 Certification des responsables de zone</h3>
-      <p>Suivi de la certification de chaque RZ : <b>période probatoire</b> (jusqu'à 3 certifications, avec la moyenne des %) puis <b>en poste</b> (deux certifications non annoncées par semestre, avec la prime). Le bouton « 📝 Grille » ouvre la grille d'évaluation : le % est calculé tout seul et reporté dans le suivi. Une fois la grille remplie, « 👁️ Consulter » la rouvre et permet de l'exporter en PDF pour la transmettre au RZ.</p>
+      <p>Suivi de la certification de chaque RZ : <b>période probatoire</b> (2 certifications, avec la moyenne des %) puis <b>en poste</b> (deux certifications non annoncées par semestre, avec la prime). Le bouton « 📝 Grille » ouvre la grille d'évaluation : le % est calculé tout seul et reporté dans le suivi. Une fois la grille remplie, « 👁️ Consulter » la rouvre et permet de l'exporter en PDF pour la transmettre au RZ.</p>
     </div>
     <div id="rzSummary"></div>
     <form id="rzAddForm" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
@@ -1655,9 +1664,12 @@
       <select id="rzAddType" style="font:inherit; font-size:13px; padding:7px 10px; border:1px solid var(--line); border-radius:8px;"><option value="probatoire">Période probatoire</option><option value="en_poste">En poste</option></select>
       <button type="submit" class="restriction-toggle-btn" style="margin-bottom:0;">➕ Ajouter</button>
     </form>
-    <h4 class="rz-block-title">Période probatoire <span id="rzProbCount"></span></h4>
+    <h4 class="rz-block-title">📅 Planning des certifications <span id="rzPlanCount"></span></h4>
+    <div id="rzPlanBar" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"></div>
+    <div id="rzWrapPlan"></div>
+    <h4 class="rz-block-title">RZ en cours — période probatoire <span id="rzProbCount"></span></h4>
     <div id="rzWrapProb"></div>
-    <h4 class="rz-block-title">En poste — certification non annoncée <span id="rzPosteCount"></span></h4>
+    <h4 class="rz-block-title">RZ certifiés — en poste, certification non annoncée <span id="rzPosteCount"></span></h4>
     <div id="rzWrapPoste"></div>
   </div>
 </section>
@@ -2833,7 +2845,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           para('Le suivi de la certification de chaque responsable de zone (RZ). Le menu <strong>Certification</strong> se déroule au clic et propose « Certification formateurs » et « Certification RZ ».')
             + sub('Deux situations')
             + list([
-              '<strong>Période probatoire</strong> : jusqu\'à 3 certifications (date + % obtenu). La <strong>moyenne</strong> des % est calculée automatiquement ; elle passe au vert à partir de 80 %.',
+              '<strong>Période probatoire</strong> : 2 certifications (date + % obtenu). La <strong>moyenne</strong> des % est calculée automatiquement ; elle passe au vert à partir de 80 %.',
               '<strong>En poste</strong> : deux certifications non annoncées par semestre (date, %, évaluateur). La <strong>prime</strong> se calcule selon le % : 80 % = 100 €, 85 % = 125 €, 90 % = 150 €, 95 % = 175 €, 98 % et plus = 200 €.',
             ])
             + sub('Utiliser l\'onglet')
@@ -5927,7 +5939,10 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   // ---------------- Certification des responsables de zone (RZ) ----------------
   const RZ_FORMS = {"prob": [{"titre": "Qualités et aptitudes attendues", "lignes": ["Il/elle a toujours une présentation professionnelle propre et soignée", "Il/elle est exigent et encourage les employés sous sa supervision", "il/elle a été formé à la sécurité alimentaire (DSA et beef intégrity)", "Il/elle crée du dynamisme sur ses quarts de travail.", "Il/elle a une communication adaptée en fonction de la situation (participative ou directive)", "Il/elle donne systématiquement du feadback aux employés à leur arrivée et leur départ", "Il/ellePrend des initiatives dans certaines situations", "S’adapte aux situations inatendues, il/elle sait gérer son stress", "Il/elle a une vraie culture service (contact facile avec les clients, tours de contrôle réguliers en salle, propreté du restaurant, alentours et des toilettes)"]}, {"titre": "Activité : Prépa quart", "lignes": ["Les DLC ont été vérifiées sur la zone (horloge de tracabilité et la feuille prévue à cet effet)", "Utilise la prépa rush pour garantir un bon de niveau de stock (produits frais, congelés et secs)", "Il/elle fait en sorte que la zone soit propre", "Il/elle fait en sorte que l'aseptisation soit en place : Chiffons en quantité suffisante, un chiffon à chaque poste de production, que les seaux à chiffons soient vérifiés et timés.", "Il/elle s'assure que le niveau ReUse soit cohérent avec les besoins", "Il/elle fixe des objectifs ciblés aux formateurs présents sur le rush ou se fixe à lui-même des objectifs ciblés de formation et le partage lors du brief rush", "Il/elle prépare les tiroirs en ligne frit en fonction des niveaux ou que les sirops de la shake sont bien calibrés", "Il/elle a préparé son brief avec le manager"]}, {"titre": "Activité : Gestion de la zone / Cuisine", "lignes": ["Il/elle prépare le tempering ou verifie que le tempering soit bien en place", "Communique en permanence avec les équipiers pour dynamiser la zone", "Il/elle fait respecter les normes par chacun afin de maintenir un haut niveau de sécurité alimentaire et de propreté en cuisine (timers en cuisine,etc….)", "S'assure que le nettoyage au fur et à mesure soit respecter pendant le rush", "Fait preuve de leadership et de dynamisme pour booster la cuisine", "S'assure que tous les équipements fonctionnent et signale toute annomalie", "Il/elle fait de la reconnaissance positive et constructive tout au long du rush", "Il/elle communique éfficacement avec le manager sur sa prise de décisions afin d'aller chercher la performance en cuisine et fait créé le lien avec la zone comptoir", "Culture service : Il/elle s'assure que les produits soient bien emballés, pas plus de 6 produits/plateau et qu'ils soient propres. Les picks listes sont bien collés et visibles. Set à plateaux sur place.", "Il/elle s'assure que la montée et la baisse des niveaux soient respectés en donnant des directives précises", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses."]}, {"titre": "Activité : Gestion de la zone / Comptoir", "lignes": ["Il/elle a une réel capacité d'entrain et de leadership pour booster le comptoir", "Il/elle s'assure que les plateaux envoyés en SAT sont bien présentés et que les sacs des commandes drive ne contiennent pas plus que le nombre de produit recommandé.", "Effectue des tours de contrôle : toilettes, lobby et exterieurs au minimum 4 fois sur le rush (1h)", "Observe les zones de danger et prend les décisions afin d'améliorer le service", "Prend en charge les clients au comptoir et s'assure que les équipiers le fasse aussi", "Communique éfficacement avec le manager sur sa prise de décisions", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses.", "Développe son relationnel client et sa présence en salle afin d'atteindre le niveau 4", "S'assure que les ballons soient en place et que les happy meals soient en quantité suffisante", "Il/elle s'assure que la prise de commande efficace soit respectée et que les employés appliquent la cutlure service à l'enlevement."]}, {"titre": "Activité : Post quart", "lignes": ["Maintient un haut de niveau de service et/ou de production", "Donne les tâches aux équipiers (propretée, niveau des stocks et sécurité alimentaire)", "S'assure que les pertes (vides/complétes) soient corretement notées", "Occasionnellement il/elle peut être amené à procéder au comptage des caisses", "S'assure de la propreté de la salle", "Debriefing du rush avec le manager (point sur les objectifs ciblés de formation et de gestion de zone)"]}, {"titre": "Activité : hors gestion de zone", "lignes": ["Il/elle fait maintenir un haut de niveau de service et/ou de production avec les équipers présents sur la zone", "Priorise les tâches après rush : sécurité alimentaire et propreté (zone cuisine : cuisine et arrière cuisine) (zone comptoir : comptoir et salle)", "S'assure que les pertes (vides/complétes) ont été notées", "Il/elle réalise un feedback à chaque équipier qui quitte sa zone", "Demande un feedback au manager de shift sur sa gestion de zone"]}], "poste": [{"titre": "Aptitudes attendues", "lignes": ["Il/elle a toujours une présentation professionnelle propre et soignée", "Il/elle est exigent et encourage les employés sous sa supervision", "Il/elle fait respecter les normes et les procédures sur la zone ou il/elle est posté (e)", "Il/elle crée du dynamisme sur ses quarts de travail.", "Il/elle a une communication adaptée en fonction de la situation (participative ou directive)", "Il/elle donne systématiquement du feadback aux employés à leur arrivée et leur départ", "Il/elle prend des initiatives dans certaines situations", "il/elle maitrise la sécurité alimentaire (DSA et beef intégrity)", "S’adapte aux situations inatendues, il/elle sait gérer son stress", "Il/elle a une vraie culture service (contact facile avec les clients, tours de contrôle réguliers en salle, propreté du restaurant, alentours et des toilettes)"]}, {"titre": "Activité : Prépa quart", "lignes": ["Les DLC ont été vérifiées sur la zone (horloge de tracabilité et la feuille prévue à cet effet)", "Utilise la prépa rush pour garantir un bon de niveau de stock (produits frais, congelés et secs)", "Il/elle fait en sorte que la zone soit propre", "Il/elle fait en sorte que l'aseptisation soit en place : Chiffons en quantité suffisante, un chiffon à chaque poste de production, que les seaux à chiffons soient vérifiés et timés.", "Il/elle s'assure que le niveau ReUse soit cohérent avec les besoins", "Il/elle fixe des objectifs ciblés aux formateurs présents sur le rush ou se fixe à lui-même des objectifs ciblés de formation et le partage lors du brief rush", "Il/elle prépare les tiroirs en ligne frit en fonction des niveaux ou que les sirops de la shake sont bien calibrés", "Il/elle a préparé son brief avec le manager"]}, {"titre": "Activité : Gestion de la zone / Cuisine", "lignes": ["Il/elle prépare le tempering ou verifie que le tempering soit bien en place", "Communique en permanence avec les équipiers pour dynamiser la zone", "Il/elle fait respecter les normes par chacun afin de maintenir un haut niveau de sécurité alimentaire et de propreté en cuisine (timers en cuisine,etc….)", "S'assure que le nettoyage au fur et à mesure soit respecter pendant le rush", "Fait preuve de leadership et de dynamisme pour booster la cuisine", "S'assure que tous les équipements fonctionnent et signale toute annomalie", "Il/elle fait de la reconnaissance positive et constructive tout au long du rush", "Il/elle communique éfficacement avec le manager sur sa prise de décisions afin d'aller chercher la performance en cuisine et fait créé le lien avec la zone comptoir", "Culture service : Il/elle s'assure que les produits soient bien emballés, pas plus de 6 produits/plateau et qu'ils soient propres. Les picks listes sont bien collés et visibles. Set à plateaux sur place.", "Il/elle s'assure que la montée et la baisse des niveaux soient respectés en donnant des directives précises", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses."]}, {"titre": "Activité : Gestion de la zone / Comptoir", "lignes": ["Il/elle a une réel capacité d'entrain et de leadership pour booster le comptoir", "Il/elle s'assure que les plateaux envoyés en SAT sont bien présentés et que les sacs des commandes drive ne contiennent pas plus que le nombre de produit recommandé.", "Effectue des tours de contrôle : toilettes, lobby et exterieurs au minimum 4 fois sur le rush (1h)", "Observe les zones de danger et prend les décisions afin d'améliorer le service", "Prend en charge les clients au comptoir et s'assure que les équipiers le fasse aussi", "Communique éfficacement avec le manager sur sa prise de décisions", "Avec l'accord du manager, Il/elle est capable de maintenir un positionnement adapté en gérant les pauses.", "Développe son relationnel client et sa présence en salle afin d'atteindre le niveau 4", "S'assure que les ballons soient en place et que les happy meals soient en quantité suffisante", "Il/elle s'assure que la prise de commande efficace soit respectée et que les employés appliquent la cutlure service à l'enlevement."]}, {"titre": "Activité : Post quart", "lignes": ["Il/elle fait maintenir un haut de niveau de service et/ou de production avec les équipers présents sur la zone", "Priorise les tâches après rush : sécurité alimentaire et propreté (zone cuisine : cuisine et arrière cuisine) (zone comptoir : comptoir et salle)", "S'assure que les pertes (vides/complétes) ont été notées", "Il/elle réalise un feedback à chaque équipier qui quitte sa zone", "Demande un feedback au manager de shift sur sa gestion de zone"]}], "prereq": "PRE-REQUIS A LA CERTIFICATION DU RESPONSABLE DE ZONE :Le futur responsable de zone doit avoir été certifié formateur. Le directeur du restaurant aura observé le formateur sur le terrain, en situation de maîtrise des process et avoir validé ses compétences de leadership. Les modules responsable de zone doivent être validés sur HU ONLINE."};
   const RZ_SLOT_LABELS = {c1:'Certification 1', c2:'Certification 2', c3:'Certification 3', s1:'1er semestre — certif. 1', s3:'1er semestre — certif. 2', s2:'2e semestre — certif. 1', s4:'2e semestre — certif. 2'};
-  const RZ_PROB_SLOTS = ['c1','c2','c3'];
+  const RZ_PROB_SLOTS = ['c1','c2'];            // 2 certifications en période probatoire (à partir de 2027)
+  const RZ_PROB_ALL = ['c1','c2','c3'];          // la 3e (ancien système) n'est affichée que si elle existe déjà
+  // Échéances des certifications des RZ en poste : [mois, jour] de l'année en cours. À ajuster avec la direction de la formation.
+  const RZ_ECHEANCES = { s1:[6,30], s3:[6,30], s2:[12,31], s4:[12,31] };
   const RZ_POSTE_SLOTS = ['s1','s3','s2','s4'];
   let rzRecords = [];
   const rzWrapProb = document.getElementById('rzWrapProb');
@@ -5946,7 +5961,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     return n >= 98 ? 200 : n >= 95 ? 175 : n >= 90 ? 150 : n >= 85 ? 125 : n >= 80 ? 100 : 0;
   }
   function rzMoyenneProb(rec){
-    const vals = RZ_PROB_SLOTS.map(s => rzPct(rec[s + 'Pct'])).filter(x => x !== null);
+    const vals = RZ_PROB_ALL.map(s => rzPct(rec[s + 'Pct'])).filter(x => x !== null);
     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
   }
   const rzEsc = s => String(s === undefined || s === null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -5975,8 +5990,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   }
 
   function rzStatutProb(rec){
-    const faites = RZ_PROB_SLOTS.filter(s => rec[s + 'Date'] && certifPassee(rec[s + 'Date'])).length;
-    const avecPct = RZ_PROB_SLOTS.filter(s => rzPct(rec[s + 'Pct']) !== null).length;
+    const faites = RZ_PROB_ALL.filter(s => rec[s + 'Date'] && certifPassee(rec[s + 'Date'])).length;
+    const avecPct = RZ_PROB_ALL.filter(s => rzPct(rec[s + 'Pct']) !== null).length;
     const n = Math.max(faites, avecPct);
     const m = rzMoyenneProb(rec);
     return { n, m };
@@ -6013,8 +6028,71 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   }
   const rzDel = rec => `<td><button type="button" class="rz-delete-btn" data-nom="${rzEsc(rec.nom)}" title="Retirer du suivi" style="border:none;background:none;color:var(--red);cursor:pointer;">🗑️</button></td>`;
 
+
+  // ---- Planning : toutes les certifications attendues, à planifier / planifiées / réalisées / en retard ----
+  let rzPlanFilter = 'all';
+  function rzProbCols(){ return rzRecords.some(r => r.type === 'probatoire' && (r.c3Date || r.c3Pct)) ? RZ_PROB_ALL : RZ_PROB_SLOTS; }
+  function rzIsoToday(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  const rzFrD = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : '—'; };
+  function rzPlanLignes(){
+    const today = rzIsoToday(), an = String(new Date().getFullYear());
+    const lignes = [];
+    rzRecords.forEach(rec => {
+      const slots = rec.type === 'probatoire' ? rzProbCols() : ['s1','s3','s2','s4'];
+      slots.forEach(slot => {
+        const pct = rzPct(rec[slot + 'Pct']), date = rec[slot + 'Date'] || '';
+        const poste = rec.type !== 'probatoire';
+        // En poste : une certification compte pour l'année en cours seulement.
+        const fait = poste ? (pct !== null || !!date) && (!date || date.slice(0, 4) === an) && (pct !== null || certifPassee(date))
+                           : (pct !== null || (!!date && certifPassee(date)));
+        const ech = poste ? an + '-' + String(RZ_ECHEANCES[slot][0]).padStart(2, '0') + '-' + String(RZ_ECHEANCES[slot][1]).padStart(2, '0') : (rec.probAu || '');
+        const prev = rec[slot + 'Prev'] || '';
+        let statut;
+        if(fait) statut = 'fait';
+        else if(prev) statut = prev < today ? 'retard' : 'planifie';
+        else statut = (ech && ech < today) ? 'retard' : 'aplanifier';
+        lignes.push({ rec, slot, poste, pct, date, ech, prev, fait, statut });
+      });
+    });
+    const ordre = { retard:0, aplanifier:1, planifie:2, fait:3 };
+    lignes.sort((a, b) => ordre[a.statut] - ordre[b.statut] || (a.prev || a.ech || '9').localeCompare(b.prev || b.ech || '9') || a.rec.nom.localeCompare(b.rec.nom, 'fr'));
+    return lignes;
+  }
+  const rzPlanOpen = new Set();
+  function rzRenderPlan(){
+    const all = rzPlanLignes();
+    const ST = { retard:['red','En retard','en retard'], aplanifier:['amber','À planifier','à planifier'], planifie:['gray','Planifiée','planifiée'], fait:['green','Réalisée','réalisée'] };
+    const cnt = k => all.filter(l => l.statut === k).length;
+    document.getElementById('rzPlanCount').textContent = '';
+    const kpi = (k, col) => `<button type="button" class="certif-kpi rz-kpi-btn${rzPlanFilter === k ? ' active' : ''}" data-f="${k}"><b style="color:${col};">${cnt(k)}</b>${ST[k][2]}${cnt(k) > 1 && k !== 'retard' && k !== 'aplanifier' ? 's' : ''}</button>`;
+    document.getElementById('rzPlanBar').innerHTML = `<div class="certif-kpis" style="margin:0;">
+      ${kpi('retard', 'var(--red)')}${kpi('aplanifier', 'var(--amber-dark)')}${kpi('planifie', '#6b7078')}${kpi('fait', 'var(--green)')}
+      <button type="button" class="certif-kpi rz-kpi-btn${rzPlanFilter === 'all' ? ' active' : ''}" data-f="all"><b>${rzRecords.length}</b>RZ (tous)</button></div>
+      <span class="certif-sub" style="display:block;width:100%;">Clique sur une pastille pour filtrer, puis sur un RZ pour voir le détail. Échéances en poste : 30 juin (1er semestre) et 31 décembre (2e semestre) ; en période probatoire : fin de la période.</span>`;
+    const ordre = { retard:0, aplanifier:1, planifie:2, fait:3 };
+    const parRz = rzRecords.map(rec => { const ls = all.filter(l => l.rec === rec); const worst = ls.reduce((w, l) => ordre[l.statut] < ordre[w] ? l.statut : w, 'fait'); return { rec, ls, worst }; })
+      .filter(g => rzPlanFilter === 'all' || g.ls.some(l => l.statut === rzPlanFilter))
+      .sort((a, b) => ordre[a.worst] - ordre[b.worst] || a.rec.nom.localeCompare(b.rec.nom, 'fr'));
+    document.getElementById('rzWrapPlan').innerHTML = !parRz.length
+      ? '<p style="color:var(--ink-soft);font-size:13px;">' + (rzRecords.length ? 'Aucun RZ avec ce statut.' : 'Ajoute un RZ pour voir son planning de certifications.') + '</p>'
+      : '<div class="rz-bubbles">' + parRz.map(g => {
+          const nom = rzEsc(g.rec.nom), open = rzPlanOpen.has(g.rec.nom);
+          const pills = ['retard','aplanifier','planifie','fait'].filter(k => g.ls.some(l => l.statut === k)).map(k => `<span class="action-pill ${ST[k][0]}">${g.ls.filter(l => l.statut === k).length} ${ST[k][2]}${g.ls.filter(l => l.statut === k).length > 1 && (k === 'planifie' || k === 'fait') ? 's' : ''}</span>`).join('');
+          const rows = g.ls.map(l => { const p = ST[l.statut]; return `<tr class="${l.statut === 'retard' ? 'rz-plan-row-late' : (l.fait ? 'rz-plan-row-done' : '')}">
+              <td>${rzEsc(RZ_SLOT_LABELS[l.slot])}</td><td>${l.ech ? rzFrD(l.ech) : '—'}</td>
+              <td>${l.fait ? '—' : `<input type="date" class="certif-input rz-in" data-nom="${nom}" data-champ="${l.slot}Prev" value="${rzEsc(l.prev)}">`}</td>
+              <td><span class="action-pill ${p[0]}">${p[1]}</span></td>
+              <td>${l.fait ? `${l.date ? rzFrD(l.date) + ' · ' : ''}${l.pct !== null ? `<span class="action-pill ${rzCls(l.pct)}">${rzFmtPct(l.pct)}</span>${l.poste ? ` <span class="certif-sub" style="display:inline;">Prime ${rzPrime(l.pct)} €</span>` : ''}` : ''}` : '—'}</td>
+              <td><button type="button" class="rz-grid-btn" data-nom="${nom}" data-slot="${l.slot}">📝 Grille</button>${l.pct !== null ? `<button type="button" class="rz-grid-btn rz-view-btn" data-nom="${nom}" data-slot="${l.slot}" data-view="1">👁️ Consulter</button>` : ''}</td></tr>`; }).join('');
+          return `<div class="rz-bubble rz-b-${g.worst}${open ? ' open' : ''}">
+            <button type="button" class="rz-bubble-head" data-nom="${nom}"><span><b>${displayName(g.rec.nom)}</b> <span class="certif-sub" style="display:inline;">${g.rec.type === 'probatoire' ? 'Probatoire' : 'En poste'}</span><span class="rz-bubble-pills">${pills}</span></span><span style="font-size:18px;color:var(--ink-soft);">${open ? '▾' : '▸'}</span></button>
+            <div class="rz-bubble-body"><div class="matrix-wrap"><table class="matrix-table"><thead><tr><th>Certification</th><th>Échéance</th><th data-tip="Date à laquelle tu prévois de réaliser la certification">Date prévue</th><th>Statut</th><th>Résultat</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`; }).join('') + '</div>';
+    document.querySelectorAll('.rz-kpi-btn').forEach(b => b.addEventListener('click', () => { rzPlanFilter = rzPlanFilter === b.dataset.f ? 'all' : b.dataset.f; renderRz(); }));
+    document.querySelectorAll('.rz-bubble-head').forEach(b => b.addEventListener('click', () => { const n = b.dataset.nom; if(rzPlanOpen.has(n)) rzPlanOpen.delete(n); else rzPlanOpen.add(n); renderRz(); }));
+  }
   function renderRz(){
     renderRzSummary();
+    rzRenderPlan();
     const prob = rzRecords.filter(r => r.type === 'probatoire').sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
     const poste = rzRecords.filter(r => r.type === 'en_poste').sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
     document.getElementById('rzProbCount').textContent = prob.length ? '(' + prob.length + ')' : '';
@@ -6026,15 +6104,15 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           <th>Responsable de zone</th><th data-tip="Passer le RZ de « Probatoire » à « En poste » une fois certifié">Statut</th>
           <th data-tip="Dates de début et de fin de la période probatoire">Période probatoire</th>
           <th data-tip="Date à laquelle le RZ a été vu par le superviseur">Vu par le superviseur</th>
-          <th data-tip="1re certification : date et % obtenu">Certification 1</th><th data-tip="2e certification : date et % obtenu">Certification 2</th><th data-tip="3e certification : date et % obtenu">Certification 3</th>
+          <th data-tip="1re certification : date et % obtenu">Certification 1</th><th data-tip="2e certification : date et % obtenu">Certification 2</th>${rzProbCols().length > 2 ? '<th data-tip="3e certification (ancien système) : date et % obtenu">Certification 3</th>' : ''}
           <th data-tip="Moyenne des % obtenus aux certifications réalisées (vert à partir de 80 %)">Moyenne</th><th></th></tr></thead><tbody>
           ${prob.map(rec => {
             const st = rzStatutProb(rec);
             return `<tr><td><b>${displayName(rec.nom)}</b></td><td>${rzTypeSelect(rec)}</td>
               <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probDu" value="${rzEsc(rec.probDu)}" title="Du" style="margin-bottom:4px;display:block;"><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="probAu" value="${rzEsc(rec.probAu)}" title="Au"></td>
               <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="vu" value="${rzEsc(rec.vu)}"></td>
-              ${RZ_PROB_SLOTS.map(s => `<td>${rzSlotCell(rec, s, false)}</td>`).join('')}
-              <td>${st.m === null ? '<span style="color:var(--ink-soft);">—</span>' : `<span class="action-pill ${rzCls(st.m)}">${rzFmtPct(st.m)}</span><span class="certif-sub">${st.n} certification${st.n > 1 ? 's' : ''} sur 3</span>`}</td>
+              ${rzProbCols().map(s => `<td>${rzSlotCell(rec, s, false)}</td>`).join('')}
+              <td>${st.m === null ? '<span style="color:var(--ink-soft);">—</span>' : `<span class="action-pill ${rzCls(st.m)}">${rzFmtPct(st.m)}</span><span class="certif-sub">${st.n} certification${st.n > 1 ? 's' : ''} sur ${rzProbCols().length}</span>`}</td>
               ${rzDel(rec)}</tr>`;
           }).join('')}</tbody></table></div>`;
 
