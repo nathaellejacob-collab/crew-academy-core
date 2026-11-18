@@ -1690,7 +1690,7 @@
       <button type="submit" class="restriction-toggle-btn" style="margin-bottom:0;">➕ Ajouter</button>
     </form>
     <div class="rz-gridtools"><span class="certif-sub" style="display:inline;margin:0;">Grilles d'évaluation :</span><button type="button" class="rz-grid-btn" id="rzEditProb">⚙️ Modifier la grille probatoire</button><button type="button" class="rz-grid-btn" id="rzEditPoste">⚙️ Modifier la grille en poste</button></div>
-    <h4 class="rz-block-title">📅 Suivi des certifications <span id="rzPlanCount"></span></h4>
+    <h4 class="rz-block-title">Suivi des certifications <span id="rzPlanCount"></span></h4>
     <div id="rzPlanBar" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"></div>
     <h4 class="rz-block-title">RZ certifiés — en poste, certification non annoncée <span id="rzPosteCount"></span></h4>
     <div id="rzWrapPoste"></div>
@@ -5830,6 +5830,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   const CERTIF_PROB = ['prob1','prob2','prob3','prob4'];
   let certifRecords = [];
   let certifCanEdit = false;
+  let certifFilter = 'todo';
   let certifProfils = [];
   const certifTableWrap = document.getElementById('certifTableWrap');
   const certifSummary = document.getElementById('certifSummary');
@@ -5893,30 +5894,38 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         : 'Ta fiche de certification n\'a pas encore été créée par ton Responsable formation.') + '</p>';
       return;
     }
-    const cellDate = (rec, key, type) => {
-      const v = (rec[key] || '').slice(0, 10);
-      const safe = rec.nom.replace(/"/g,'&quot;');
-      if(edit){
-        return `<input type="date" class="certif-input ${type === 'dt' ? 'datetime' : ''}" data-nom="${safe}" data-champ="${key}" value="${v}">`;
-      }
-      if(!v) return '<span style="color:var(--ink-soft);">—</span>';
-      return certifPassee(v) ? certifDateLibelle(v) : `<span class="certif-cell-prevue">${certifDateLibelle(v)}<span class="certif-sub">prévue</span></span>`;
+    // ---- Suivi : une ligne par formateur, étapes alignées en colonnes, avec pastilles de statut ----
+    const sts = certifRecords.map(certifStatut);
+    const nbEnCours = sts.filter(x => x.cls !== 'green' && x.cls !== 'plum').length, nbPret = sts.filter(x => x.cls === 'plum').length, nbCert = sts.filter(x => x.cls === 'green').length;
+    const pill = { aplanifier:['amber','À planifier'], planifie:['gray','Planifiée'], fait:['green','Réalisée'] };
+    const statutDe = v => v ? (certifPassee(v) ? 'fait' : 'planifie') : 'aplanifier';
+    const cellule = (rec, key) => {
+      const v = (rec[key] || '').slice(0, 10), p = pill[statutDe(v)], safe = rec.nom.replace(/"/g, '&quot;');
+      return `<td>${edit ? `<input type="date" class="certif-input" data-nom="${safe}" data-champ="${key}" value="${v}">` : (v ? `<div>${certifDateLibelle(v)}</div>` : '')}<div style="margin-top:4px;"><span class="action-pill ${p[0]}">${p[1]}</span></div></td>`;
     };
-    const lignes = certifRecords.slice().sort((a, b) => certifStatut(b).rang - certifStatut(a).rang || a.nom.localeCompare(b.nom, 'fr')).map(rec => {
-      const st = certifStatut(rec);
-      const safe = rec.nom.replace(/"/g,'&quot;');
-      return `<tr>
-        <td><b>${displayName(rec.nom)}</b></td>
-        <td><span class="action-pill ${st.cls}">${st.libelle}</span>${st.sub ? `<span class="certif-sub">${st.sub}</span>` : ''}</td>
-        ${CERTIF_STEPS.map(stp => `<td>${cellDate(rec, stp.key, 'd')}</td>`).join('')}
-        <td>${CERTIF_PROB.map(k => cellDate(rec, k, 'dt')).join('')}</td>
-        <td>${cellDate(rec, 'certifie', 'd')}</td>
+    const visibles = certifRecords.slice().sort((a, b) => certifStatut(b).rang - certifStatut(a).rang || a.nom.localeCompare(b.nom, 'fr'))
+      .filter(rec => { const c = certifStatut(rec).cls === 'green'; return certifFilter === 'all' || (certifFilter === 'done' ? c : !c); });
+    const lignes = visibles.map(rec => {
+      const st = certifStatut(rec), safe = rec.nom.replace(/"/g, '&quot;');
+      const nProb = CERTIF_PROB.filter(k => certifPassee(rec[k])).length;
+      const probCell = `<td>${CERTIF_PROB.map(k => { const v = (rec[k] || '').slice(0, 10); return edit ? `<input type="date" class="certif-input datetime" data-nom="${safe}" data-champ="${k}" value="${v}">` : `<div>${v ? certifDateLibelle(v) + (certifPassee(v) ? '' : ' <i class="certif-sub" style="display:inline;">(prévue)</i>') : '—'}</div>`; }).join('')}<div style="margin-top:2px;"><span class="action-pill ${nProb === 4 ? 'green' : (CERTIF_PROB.some(k => rec[k]) ? 'gray' : 'amber')}">${nProb} / 4 réalisées</span></div></td>`;
+      return `<tr class="${st.cls === 'green' ? 'rz-plan-row-done' : ''}">
+        <td><b>${displayName(rec.nom)}</b><div style="margin-top:4px;"><span class="action-pill ${st.cls}">${st.libelle}</span></div>${st.sub ? `<span class="certif-sub">${st.sub}</span>` : ''}</td>
+        ${CERTIF_STEPS.map(stp => cellule(rec, stp.key)).join('')}
+        ${probCell}
+        ${cellule(rec, 'certifie')}
         ${edit ? `<td><button type="button" class="certif-delete-btn" data-nom="${safe}" title="Retirer du suivi" style="border:none;background:none;color:var(--red);cursor:pointer;">🗑️</button></td>` : ''}
       </tr>`;
     }).join('');
-    certifTableWrap.innerHTML = `<div class="matrix-wrap"><table class="matrix-table">
-      <thead><tr><th>Formateur</th><th>Avancement</th>${CERTIF_STEPS.map(stp => `<th data-tip="${stp.aide}">${stp.label}</th>`).join('')}<th data-tip="4 formations planifiées pendant la période probatoire">Formations probatoires</th><th data-tip="Certifié par la direction de la formation le...">Certifié le</th>${edit ? '<th></th>' : ''}</tr></thead>
-      <tbody>${lignes}</tbody></table></div>`;
+    certifTableWrap.innerHTML = `<h4 class="rz-block-title">Suivi des certifications <span>(${nbEnCours} en cours · ${nbPret} prêt${nbPret > 1 ? 's' : ''} · ${nbCert} certifié${nbCert > 1 ? 's' : ''})</span></h4>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"><label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Afficher :
+        <select id="certifFilter" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
+          <option value="todo"${certifFilter === 'todo' ? ' selected' : ''}>En cours</option><option value="done"${certifFilter === 'done' ? ' selected' : ''}>Certifiés</option><option value="all"${certifFilter === 'all' ? ' selected' : ''}>Tous</option></select></label>
+        <span class="certif-sub" style="display:inline;">Une date à venir est « planifiée », elle passe en « réalisée » une fois la date atteinte.</span></div>
+      ${lignes ? `<div class="matrix-wrap"><table class="matrix-table">
+      <thead><tr><th>Formateur</th>${CERTIF_STEPS.map(stp => `<th data-tip="${stp.aide}">${stp.label}</th>`).join('')}<th data-tip="4 formations planifiées pendant la période probatoire">Formations probatoires</th><th data-tip="Certifié par la direction de la formation le...">Certifié le</th>${edit ? '<th></th>' : ''}</tr></thead>
+      <tbody>${lignes}</tbody></table></div>` : '<p style="color:var(--ink-soft);font-size:13px;">Rien à afficher avec ce filtre.</p>'}`;
+    document.getElementById('certifFilter').addEventListener('change', e => { certifFilter = e.target.value; renderCertifTable(); });
     if(!edit) return;
     certifTableWrap.querySelectorAll('.certif-input').forEach(inp => {
       inp.addEventListener('change', () => certifSauver(inp.dataset.nom, {[inp.dataset.champ]: inp.value}, inp));
