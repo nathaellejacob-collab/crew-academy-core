@@ -2761,6 +2761,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     function renderGuideContent(){
       const peutEtrePlanifie = canBeScheduledRole(sessionRole) || isGerant;
       const accesResponsable = isResponsableLevelRole(sessionRole) || isGerant;
+      const accesCertifRZ = isGerant || (isResponsableLevelRole(sessionRole) && !['Responsable de zone', 'Manager'].includes(String(sessionRole || '').trim()));
       const profil = isGerant ? 'Gérant' : (sessionRole || 'Formateur');
 
       // ----- Petits éléments de mise en page -----
@@ -2914,7 +2915,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
             ])
             + tip('Comme le reste du site, seules l\'année en cours et l\'année précédente sont conservées : une fiche dont toutes les dates sont plus anciennes est supprimée automatiquement. Les actions sont notées dans le journal d\'activité, sous « Certification formateurs ».'));
 
-      if(accesResponsable) section('certification-rz', '🧭', 'var(--teal)', 'Certification RZ', 'Suivi des responsables de zone : probatoire et en poste',
+      if(accesCertifRZ) section('certification-rz', '🧭', 'var(--teal)', 'Certification RZ', 'Suivi des responsables de zone : probatoire et en poste',
           para('Le suivi de la certification de chaque responsable de zone (RZ). Le menu <strong>Certification</strong> se déroule au clic et propose « Certification formateurs » et « Certification RZ ».')
             + sub('Deux situations')
             + list([
@@ -2929,7 +2930,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
               'Clique <strong>Enregistrer</strong> : la date, le % et l\'évaluateur sont reportés dans le suivi. Tu peux rouvrir la grille plus tard pour la corriger.',
               'Le menu « Statut » d\'une ligne fait passer un RZ de « Probatoire » à « En poste » une fois certifié. Le <strong>🗑️</strong> retire un RZ du suivi.',
             ])
-            + tip('Comme le reste du site, seules l\'année en cours et l\'année précédente sont conservées. Les RZ et les formateurs n\'ont pas accès à cet onglet.'));
+            + tip('Comme le reste du site, seules l\'année en cours et l\'année précédente sont conservées. Les RZ, les Managers et les formateurs n\'ont pas accès à cet onglet.'));
 
       // ----- 6. Alternant -----
       section('alternant', '🎓', 'var(--plum)', 'Alternant', 'Parcours et planning de l\'alternant',
@@ -6770,7 +6771,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       el.innerHTML = `<span>Total des actions maîtrisées</span> <span class="action-pill ${fmCls(c.pct, g.form)}" style="font-size:15px;">${rzFmtPct(c.pct)}</span> <span class="certif-sub" style="display:inline;margin-left:8px;">${fmLegend(g.form)}</span>`;
     } else {
       const s = fmSyntheseAnnuelle(), pr = g.form.prime;
-      el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;"><span>Note obtenue (moyenne des trimestres)</span> <span class="action-pill ${fmCls(s.c.pct, g.form)}" style="font-size:15px;">${rzFmtPct(s.c.pct)}</span>
+      el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;"><span>Note obtenue (total des points des 4 trimestres)</span> <span class="action-pill ${fmCls(s.c.pct, g.form)}" style="font-size:15px;">${rzFmtPct(s.c.pct)}</span>
         <span>· Palier : <b>${s.pr.palier ? rzEsc(s.pr.palier.nom) : 'aucun'}</b>${s.pr.palier ? ' (' + fmEur(s.pr.palier.montant) + ' pour un temps complet)' : ''}</span>
         <label style="font-weight:700;font-size:12px;">Heures travaillées sur l'année <input type="number" id="fmHeures" min="0" max="5000" step="0.5" value="${rzEsc(g.rep.heures === undefined ? '' : g.rep.heures)}"${g.ro ? ' disabled' : ''} style="width:90px;font:inherit;padding:5px 7px;border:1px solid var(--line);border-radius:8px;"> / ${pr.heures} h</label>
         <span>· Prime : <b>${s.pr.montant === null ? '—' : fmEur(s.pr.montant)}</b></span></div>`;
