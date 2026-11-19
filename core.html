@@ -4581,8 +4581,10 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   // Seul le gérant ou un "Responsable formation" actif voit l'onglet Activité —
   // invisible pour un simple formateur.
   const canSeeActivite = isGerant || isResponsableLevelRole(sessionRole);
-  // Certifications, évaluations et suivis : réservés au gérant et aux profils de direction (ni Formateur, ni Responsable de zone, ni Manager).
+  // Certification des RZ : gérant et profils de direction uniquement (ni Formateur, ni Responsable de zone, ni Manager).
   const canSeeCertif = isGerant || (isResponsableLevelRole(sessionRole) && !['Responsable de zone', 'Manager'].includes(String(sessionRole || '').trim()));
+  // Certification et évaluations des formateurs : gérant et tous les profils non-Formateur (Responsable de zone et Manager compris).
+  const canSeeCertifFM = isGerant || isResponsableLevelRole(sessionRole);
   const tabActiviteBtn = document.querySelector('.tab-btn[data-tab="activite"]');
   if(tabActiviteBtn && !canSeeActivite){
     tabActiviteBtn.style.display = 'none';
@@ -4590,12 +4592,11 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
 
   // Certification des formateurs : réservée au gérant et au Responsable formation (onglet invisible pour un simple formateur).
   const tabCertifBtn = document.querySelector('.tab-btn[data-tab="certification"]');
-  if(tabCertifBtn && !canSeeCertif){
+  if(tabCertifBtn && !canSeeCertifFM){
     tabCertifBtn.style.display = 'none';
   }
   // Suivis 4 semaines / 60 jours : même accès (gérant et Responsable formation).
-  const tabSuivisBtn = document.getElementById('tabSuivisBtn');
-  if(tabSuivisBtn && !canSeeCertif){ tabSuivisBtn.style.display = 'none'; }
+  // (l'onglet Suivis est ouvert à tous les profils)
   // Menu « Certification » (formateurs + RZ) : même accès, il se déroule au clic.
   const certifGroupBtn = document.getElementById('tabCertifGroupBtn');
   const certifSubnav = document.getElementById('certifSubnav');
@@ -4604,10 +4605,12 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     certifGroupBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
     certifGroupBtn.querySelector('.arrow').textContent = open ? '▴' : '▾';
   }
-  if(!canSeeCertif){
+  if(!canSeeCertifFM){
     certifGroupBtn.style.display = 'none';
     certifSubnav.style.display = 'none';
   }
+  const tabCertifRZBtn = document.querySelector('.tab-btn[data-tab="certification-rz"]');
+  if(tabCertifRZBtn && !canSeeCertif){ tabCertifRZBtn.style.display = 'none'; }
   certifGroupBtn.addEventListener('click', () => {
     const open = certifSubnav.style.display === 'none';
     setCertifMenu(open);
@@ -6885,6 +6888,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   };
   const SU_NIVEAUX = ['Insuffisant', 'Satisfaisant', 'Très satisfaisant'];
   const SU_LAB = { j30: 'Suivi à 4 semaines', j60: 'Suivi à 60 jours' };
+  // Grille et bilan : gérant et tous les profils sauf Formateur (Responsable de zone et Manager compris).
+  const suCanGrid = isGerant || isResponsableLevelRole(sessionRole);
   let suGrille = null, suSuivis = [], suLoaded = false, suAnnee = String(new Date().getFullYear()), suFilter = 'todo', suGrid = null, suDebrief = null, suBusy = false;
   const suivisWrap = document.getElementById('suivisWrap');
 
@@ -6995,10 +7000,10 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           <select id="suFilter" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;"><option value="todo"${suFilter === 'todo' ? ' selected' : ''}>Reste à faire</option><option value="done"${suFilter === 'done' ? ' selected' : ''}>Déjà réalisés</option><option value="all"${suFilter === 'all' ? ' selected' : ''}>Tout</option></select></label>
         <label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Année :
           <select id="suAnnee" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">${annees.map(a => `<option value="${a}"${a === suAnnee ? ' selected' : ''}>${a}</option>`).join('')}</select></label>
-        <button type="button" class="rz-grid-btn" id="suEditGrid">⚙️ Modifier la grille des suivis</button></div>
+        ${suCanGrid ? '<button type="button" class="rz-grid-btn" id="suEditGrid">⚙️ Modifier la grille des suivis</button>' : ''}</div>
       <h4 class="rz-block-title">Suivis à 4 semaines et à 60 jours <span>(${cnt('retard')} en retard · ${cnt('avenir')} à venir · ${cnt('sans')} sans grille · ${cnt('fait')} réalisé${cnt('fait') > 1 ? 's' : ''})</span></h4>
       ${!all.length ? '<p style="color:var(--ink-soft);font-size:13px;">Aucun suivi prévu en ' + suAnnee + '.</p>' : (!lignes.length ? '<p style="color:var(--ink-soft);font-size:13px;">Rien à afficher avec ce filtre.</p>' : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr><th>Équipier</th><th>Suivi</th><th data-tip="Date limite : 1 mois (4 semaines) ou 60 jours après l'entrée">Échéance</th><th>Statut</th><th>Réalisé le</th><th>Réalisé par</th><th data-tip="Part de réponses positives de l'équipier aux questions de la grille">Satisfaction</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`)}
-      <h4 class="rz-block-title" style="margin-top:26px;">Bilan ${suAnnee} de notre accueil et de notre formation <span>(${nb30} suivi${nb30 > 1 ? 's' : ''} à 4 semaines · ${nb60} à 60 jours)</span></h4>
+      ${suCanGrid ? `<h4 class="rz-block-title" style="margin-top:26px;">Bilan ${suAnnee} de notre accueil et de notre formation <span>(${nb30} suivi${nb30 > 1 ? 's' : ''} à 4 semaines · ${nb60} à 60 jours)</span></h4>
       ${!B.recs.length ? '<p style="color:var(--ink-soft);font-size:13px;">Le bilan apparaît dès qu\'un suivi est enregistré avec sa grille.</p>' : `
         <div class="su-kpis"><div class="su-kpi"><span>Satisfaction globale</span><b><span class="action-pill ${suCls(globale)}" style="font-size:16px;">${rzFmtPct(globale)}</span></b></div><div class="su-kpi"><span>Suivis réalisés</span><b>${B.recs.length}</b></div></div>
         <p class="certif-sub">${suLegende}</p>
@@ -7007,11 +7012,11 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         ${tabQ}${tabF}${tabC}`}
       <h4 class="rz-block-title" style="margin-top:26px;">Débrief de l'année avec l'IA</h4>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"><button type="button" class="rz-grid-btn" id="suDebriefBtn">📋 Copier pour l\'IA</button></div>
-      <p class="certif-sub">Copie les réponses et commentaires de ${suAnnee} (sans les noms des équipiers), puis colle-les dans une conversation Claude : il rédige le débrief de l'année (points forts, axes d'amélioration, thèmes récurrents, actions).</p>`;
+      <p class="certif-sub">Copie les réponses et commentaires de ${suAnnee} (sans les noms des équipiers), puis colle-les dans une conversation Claude : il rédige le débrief de l'année (points forts, axes d'amélioration, thèmes récurrents, actions).</p>` : ''}`;
     document.getElementById('suFilter').addEventListener('change', e => { suFilter = e.target.value; suRender(); });
     document.getElementById('suAnnee').addEventListener('change', async e => { suAnnee = e.target.value; suDebrief = null; suRender(); suChargerDebrief(); });
-    document.getElementById('suEditGrid').addEventListener('click', suEdOpen);
-    document.getElementById('suDebriefBtn').addEventListener('click', suCopierIA);
+    const suEG = document.getElementById('suEditGrid'); if(suEG) suEG.addEventListener('click', suEdOpen);
+    const suDB = document.getElementById('suDebriefBtn'); if(suDB) suDB.addEventListener('click', suCopierIA);
     const cp = document.getElementById('suDebriefCopy'); if(cp) cp.addEventListener('click', () => { navigator.clipboard.writeText(suDebrief.texte); cp.textContent = '✓ Copié'; });
     suivisWrap.querySelectorAll('button[data-su-type]').forEach(b => b.addEventListener('click', () => suOpen(b.dataset.suNom, b.dataset.suType, b.dataset.suRo === '1')));
   }
@@ -7051,7 +7056,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     if(!d){ suivisWrap.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Les suivis 4 semaines / 60 jours seront disponibles après la mise à jour du serveur.</p>'; return; }
     suSuivis = d.suivis || []; suGrille = d.grille || null; suLoaded = true;
     suRender();
-    suChargerDebrief();
+    if(suCanGrid) suChargerDebrief();
   }
 
   // ---- Fenêtre d'un suivi ----
