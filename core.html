@@ -6518,7 +6518,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   const FM_COLS = [{k:'t1', lab:'1er trimestre'}, {k:'t2', lab:'2e trimestre'}, {k:'bilan', lab:'Bilan de juillet'}, {k:'t3', lab:'3e trimestre'}, {k:'t4', lab:'4e trimestre'}, {k:'annuel', lab:'Évaluation annuelle'}];
   const FM_LAB = { t1:'1er trimestre', t2:'2e trimestre', t3:'3e trimestre', t4:'4e trimestre', bilan:'Bilan intermédiaire de juillet', annuel:'Évaluation annuelle' };
   const FM_OPTS = [['OUI','OUI'], ['PARTIELLEMENT','PARTIEL'], ['NON','NON']];
-  let fmEvals = [], fmLoaded = false, fmAnnee = String(new Date().getFullYear()), fmGrid = null;
+  let fmEvals = [], fmLoaded = false, fmAnnee = String(new Date().getFullYear()), fmGrid = null, fmArch = [], fmArchLoaded = false;
+  const fmEstArch = y => fmArchLoaded && Number(y) < new Date().getFullYear() - 1;
   const certifEvalWrap = document.getElementById('certifEvalWrap');
 
   const fmPrimeNorm = p => {
@@ -6549,7 +6550,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const P = par.reduce((x, y) => x + y.p, 0), B = par.reduce((x, y) => x + y.b, 0);
     return { par, p: P, b: B, total: B ? (P / B) * 100 : null, L };
   }
-  const fmEvalDe = (nom, per) => fmEvals.find(e => e.nom === nom && e.annee === fmAnnee && e.periode === per) || null;
+  const fmEvalDe = (nom, per) => (fmEstArch(fmAnnee) ? fmArch : fmEvals).find(e => e.nom === nom && e.annee === fmAnnee && e.periode === per) || null;
   // Cumul des résumés de plusieurs périodes : par ligne (axe + texte), par axe et au total.
   function fmCumul(nom, pers){
     const lignes = {}, axes = {}, ordre = [];
@@ -6595,6 +6596,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     if(!certifCanEdit || !fmLoaded){ certifEvalWrap.innerHTML = ''; return; }
     const form = fmForm();
     const annees = []; for(let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 1; y--) annees.push(String(y));
+    if(fmArchLoaded) fmArch.map(e => e.annee).filter((a, i, t) => t.indexOf(a) === i).sort().reverse().forEach(a => { if(annees.indexOf(a) === -1) annees.push(a); });
+    const arch = fmEstArch(fmAnnee);
     const all = fmLignes(), cnt = k => all.filter(l => l.statut === k).length;
     const lignes = all.filter(l => fmFilter === 'all' || (fmFilter === 'done' ? l.fait : !l.fait));
     const pill = { retard:['red','En retard'], aplanifier:['amber','À planifier'], planifie:['gray','Planifiée'], fait:['green','Réalisée'] };
@@ -6607,9 +6610,9 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       const pr = k === 'annuel' && l.fait && e.resume && e.resume.montant !== undefined && e.resume.montant !== null ? `<b>${fmEur(e.resume.montant)}</b>${e.resume.palier ? `<span class="certif-sub" style="display:block;">${rzEsc(e.resume.palier)}</span>` : ''}` : '—';
       return `<tr class="${l.statut === 'retard' ? 'rz-plan-row-late' : (l.fait ? 'rz-plan-row-done' : '')}"${debut ? ' style="box-shadow:inset 0 3px 0 #d6d1c2;"' : ''}>
         <td><b>${displayName(l.rec.nom)}</b></td><td>${rzEsc(FM_LAB[k])}</td><td>${fmFr(l.ech)}</td>
-        <td>${l.fait ? '—' : `<input type="date" class="certif-input" data-fm-prev="1" data-nom="${safe}" data-per="${k}" value="${rzEsc(l.prev)}">`}</td>
+        <td>${l.fait || arch ? '—' : `<input type="date" class="certif-input" data-fm-prev="1" data-nom="${safe}" data-per="${k}" value="${rzEsc(l.prev)}">`}</td>
         <td><span class="action-pill ${pill[l.statut][0]}">${pill[l.statut][1]}</span></td><td>${res}</td><td>${pr}</td>
-        <td><div style="display:flex;flex-direction:column;align-items:center;gap:8px;">${btn(k === 'bilan' ? '📝 Bilan' : (k === 'annuel' ? '📝 Évaluation' : '📝 Grille'), false)}${l.fait ? btn('👁️ Consulter', true, 'rz-view-btn') : ''}</div></td></tr>`;
+        <td><div style="display:flex;flex-direction:column;align-items:center;gap:8px;">${arch ? '' : btn(k === 'bilan' ? '📝 Bilan' : (k === 'annuel' ? '📝 Évaluation' : '📝 Grille'), false)}${l.fait ? btn('👁️ Consulter', true, 'rz-view-btn') : ''}</div></td></tr>`;
     }).join('');
     certifEvalWrap.innerHTML = `<h4 class="rz-block-title">Évaluations des formateurs <span>(${cnt('retard')} en retard · ${cnt('aplanifier')} à planifier · ${cnt('planifie')} planifiée${cnt('planifie') > 1 ? 's' : ''} · ${cnt('fait')} réalisée${cnt('fait') > 1 ? 's' : ''})</span></h4>
       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
@@ -6619,12 +6622,23 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         <label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Année :
           <select id="fmAnnee" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">${annees.map(a => `<option value="${a}"${a === fmAnnee ? ' selected' : ''}>${a}</option>`).join('')}</select></label>
         <button type="button" class="rz-grid-btn" id="fmEditGrid">⚙️ Modifier la grille d'évaluation</button>
+        ${fmArchLoaded ? (arch ? '<span class="certif-sub" style="display:inline;font-weight:700;">🗄️ Archive (lecture seule)</span>' : '') : '<button type="button" class="rz-grid-btn" id="fmArchBtn">🗄️ Voir les archives</button>'}
         <span class="certif-sub" style="display:inline;">${fmLegend(form)}</span></div>
       ${!certifRecords.length ? '<p style="color:var(--ink-soft);font-size:13px;">Ajoute un formateur au suivi pour commencer ses évaluations.</p>' : (!lignes.length ? '<p style="color:var(--ink-soft);font-size:13px;">Rien à afficher avec ce filtre.</p>' : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
         <th>Formateur</th><th>Évaluation</th><th data-tip="Date limite indicative pour réaliser l'évaluation">Échéance</th><th data-tip="Date à laquelle tu prévois de faire l'évaluation">Date prévue</th><th>Statut</th><th>Résultat</th><th data-tip="Prime annuelle : palier atteint puis prorata des heures travaillées">Prime annuelle</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`)}`;
     document.getElementById('fmFilter').addEventListener('change', e => { fmFilter = e.target.value; fmRender(); });
-    document.getElementById('fmAnnee').addEventListener('change', e => { fmAnnee = e.target.value; fmRender(); });
+    document.getElementById('fmAnnee').addEventListener('change', e => { fmAnnee = e.target.value; if(fmEstArch(fmAnnee)) fmFilter = 'done'; fmRender(); });
     document.getElementById('fmEditGrid').addEventListener('click', () => rzEdOpen('formateur'));
+    const fmAB = document.getElementById('fmArchBtn');
+    if(fmAB) fmAB.addEventListener('click', async () => {
+      fmAB.disabled = true;
+      const d = await fmAppel({ sheet:'get_evaluations_formateur', archive: true });
+      if(!d){ fmAB.disabled = false; return; }
+      fmArch = d.evaluations || []; fmArchLoaded = true;
+      const ys = fmArch.map(e => e.annee).sort();
+      if(ys.length){ fmAnnee = ys[ys.length - 1]; fmFilter = 'done'; } else alert('Aucune évaluation archivée pour le moment.');
+      fmRender();
+    });
     certifEvalWrap.querySelectorAll('button[data-fm-per]').forEach(b => b.addEventListener('click', () => fmOpen(b.dataset.fmNom, b.dataset.fmPer, b.dataset.fmRo === '1')));
     certifEvalWrap.querySelectorAll('input[data-fm-prev]').forEach(inp => inp.addEventListener('change', async () => {
       inp.disabled = true;
@@ -6657,12 +6671,13 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
 
   // ---- Fenêtre d'évaluation (trimestre, bilan, annuelle) ----
   async function fmOpen(nom, per, ro){
-    const d = await fmAppel({ sheet:'get_evaluation_formateur', nom, annee: fmAnnee, periode: per });
+    const arch = fmEstArch(fmAnnee);
+    const d = await fmAppel({ sheet:'get_evaluation_formateur', nom, annee: fmAnnee, periode: per, archive: arch });
     if(!d) return;
     const ev = d.evaluation, rep = (ev && ev.reponses) || {};
     const form = rep._grille ? (() => { const f = rzNormForm(rep._grille, 'formateur'); f.prime = fmPrimeNorm(rep._grille.prime); return f; })() : fmForm();
     delete rep._grille;
-    fmGrid = { nom, per, ro, rep, form, ev };
+    fmGrid = { nom, per, ro: ro || arch, rep, form, ev };
     fmDraw();
     rzGridModal.style.display = '';
   }
