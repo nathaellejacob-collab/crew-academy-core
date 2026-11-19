@@ -6942,7 +6942,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     if(!suivisWrap) return;
     if(!suLoaded){ return; }
     const form = suForm();
-    const annees = []; for(let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 2; y--) annees.push(String(y));
+    const annees = []; for(let y = new Date().getFullYear() + 1; y >= new Date().getFullYear() - 1; y--) annees.push(String(y));
     const all = suLignes(), cnt = k => all.filter(l => l.statut === k).length;
     const lignes = all.filter(l => suFilter === 'all' || (suFilter === 'done' ? l.fait : !l.fait));
     const pill = { retard:['red', 'En retard'], avenir:['gray', 'À venir'], sans:['amber', 'Fait · sans grille'], fait:['green', 'Réalisé'] };
