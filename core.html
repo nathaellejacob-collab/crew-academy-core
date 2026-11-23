@@ -5049,10 +5049,15 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     if(!box) return;
     const appel = async obj => { const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody(obj)) }); const d = await res.json(); if(!d.ok) throw new Error(d.error || 'Échec du chargement'); return d; };
     try{
-      // Photo du mois : le taux de polyvalence n'est connu qu'à l'instant T, on l'enregistre pour pouvoir le comparer plus tard.
+      // Photo du mois : le taux de polyvalence n'est connu qu'à l'instant T, on l'enregistre pour pouvoir le comparer plus tard
+      // (en arrière-plan : on n'attend pas la réponse, le chiffre du mois est complété ici même).
       const stats = restaurants.map(r => computeRestaurantStats(r)).filter(x => x.totalEmployees > 0).map(x => ({ restaurant: x.restaurant, taux: Math.round(x.polyAvg * 1000) / 10, effectif: x.totalEmployees }));
-      if(stats.length) await appel({ sheet:'save_photo_polyvalence', stats });
-      const d = await appel({ sheet:'get_comparatif_annuel' });
+      if(stats.length) appel({ sheet:'save_photo_polyvalence', stats }).catch(() => {});
+      // Chaque restaurant est demandé séparément, tous en même temps : bien plus rapide qu'une seule grosse requête.
+      const [dPoly, ...dRest] = await Promise.all([appel({ sheet:'get_comparatif_annuel', seulPolyvalence: true })].concat(restaurants.map(r => appel({ sheet:'get_comparatif_annuel', restaurant: r }))));
+      const now = new Date(), moisNow = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      const poly = dPoly.polyvalence.filter(x => !(x.mois === moisNow && stats.some(st => st.restaurant === x.restaurant))).concat(stats.map(st => ({ mois: moisNow, restaurant: st.restaurant, taux: st.taux, effectif: st.effectif })));
+      const d = { annee: dPoly.annee, polyvalence: poly, restaurants: restaurants.map((r, i) => dRest[i].restaurants.find(e => e.restaurant === r)).filter(Boolean) };
       const Y = String(d.annee), P = String(d.annee - 1);
       const dernier = (nom, an) => d.polyvalence.filter(x => x.restaurant === nom && x.mois.slice(0, 4) === an).sort((a, b) => a.mois.localeCompare(b.mois)).pop();
       const eur = n => (Math.round(n)).toLocaleString('fr-FR') + ' €';
