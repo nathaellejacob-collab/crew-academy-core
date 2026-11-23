@@ -6738,13 +6738,6 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
             <tr><td>Pas encore certifié</td><td colspan="6"><span class="action-pill gray" style="width:auto;max-width:none;display:inline-block;padding:2px 10px;">absent du tableau</span></td></tr>
           </tbody></table></div>
         <p class="certif-sub" style="margin:6px 0 0;">« non » = évaluation écartée. Seul le trimestre en cours à la date de certification, et les suivants, sont dus. Le bilan de juillet reste dû tant que T1 ou T2 est dû ; l'évaluation annuelle, tant qu'un trimestre est dû.</p></details>
-      ${(() => {
-        const court = { t1:'T1', t2:'T2', bilan:'bilan de juillet', t3:'T3', t4:'T4', annuel:'évaluation annuelle' };
-        const liste = certifRecords.filter(r => certifStatut(r).cls === 'green').map(r => ({ r, ec: FM_COLS.filter(c => fmNA(r, c.k)).map(c => court[c.k]) })).filter(x => x.ec.length)
-          .sort((x, y) => x.r.nom.localeCompare(y.r.nom, 'fr'));
-        if(!liste.length) return '';
-        return '<p class="certif-sub" style="margin:0 0 10px;">ℹ️ <b>Non concernés en ' + fmAnnee + '</b> (certifiés en cours d\'année, pas un oubli) : ' + liste.map(x => '<b>' + displayName(x.r.nom) + '</b> : ' + x.ec.join(', ') + ' (certifié le ' + certifDateLibelle(x.r.certifie) + ')').join(' · ') + '.</p>';
-      })()}
       ${!certifRecords.length ? '<p style="color:var(--ink-soft);font-size:13px;">Ajoute un formateur au suivi pour commencer ses évaluations.</p>' : (!lignes.length ? '<p style="color:var(--ink-soft);font-size:13px;">Rien à afficher avec ce filtre.</p>' : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
         <th>Formateur</th><th>Évaluation</th><th data-tip="Date limite indicative pour réaliser l'évaluation">Échéance</th><th data-tip="Date à laquelle tu prévois de faire l'évaluation">Date prévue</th><th>Statut</th><th>Résultat</th><th data-tip="Prime annuelle : palier atteint puis prorata des heures travaillées">Prime annuelle</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`)}`;
     document.getElementById('fmFilter').addEventListener('change', e => { fmFilter = e.target.value; fmRender(); });
@@ -6828,7 +6821,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires et engagement du collaborateur${fmTa('fmCom', g.ev && g.ev.commentaire, '', ro, 3)}</label>`;
     } else if(per === 'bilan'){
       const c = fmCumul(g.nom, ['t1', 't2']), att = fmAttendus(certifRecords.find(r => r.nom === g.nom) || {}, ['t1', 't2']);
-      body = `<p class="modal-sub" style="margin-top:0;">Bilan intermédiaire de juillet — niveau de maîtrise calculé sur les 1er et 2e trimestres ${fmAnnee}${c.n < att ? ' <b>(il manque un trimestre : résultat provisoire)</b>' : ''}</p>${fmHead()}
+      body = `<p class="modal-sub" style="margin-top:0;">Bilan intermédiaire de juillet — niveau de maîtrise calculé sur les trimestres réalisés en ${fmAnnee}${c.n < att ? ' <b>(il manque un trimestre : résultat provisoire)</b>' : ''}</p>${fmHead()}
         ${form.sections.map((s, si) => { const ax = c.axes[s.titre];
           const ligs = s.lignes.map((l, li) => { const x = c.lignes[s.titre + '||' + l.t]; const pc = x && x.b ? x.p / x.b * 100 : null; return { l, li, pc }; });
           const vals = ligs.filter(x => x.pc !== null), moy = vals.length ? vals.reduce((a, x) => a + x.pc, 0) / vals.length : null;
@@ -6852,6 +6845,13 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         ${fmBlocTitre('V – Commentaires et engagement du collaborateur')}
         ${fmTa('fmCom', g.ev && g.ev.commentaire, '', ro, 3)}`;
     }
+    // Formateur certifié en cours d'année : on indique sur sa grille quelles évaluations ne le concernent pas.
+    { const rc = certifRecords.find(r => r.nom === g.nom);
+      if(rc && certifStatut(rc).cls === 'green'){
+        const court = { t1:'T1', t2:'T2', bilan:'le bilan de juillet', t3:'T3', t4:'T4', annuel:'l\'évaluation annuelle' };
+        const ec = FM_COLS.filter(c => fmNA(rc, c.k)).map(c => court[c.k]);
+        if(ec.length) body = '<p class="certif-sub" style="margin:0 0 10px;">ℹ️ Certifié le ' + certifDateLibelle(rc.certifie) + ' : ' + ec.join(', ') + ' ne concerne' + (ec.length > 1 ? 'nt' : '') + ' pas ce formateur en ' + fmAnnee + '.</p>' + body;
+      } }
     body += `<div class="rz-total" id="fmTotal"></div><div class="modal-error" id="fmError" style="display:none;"></div>
       <div class="modal-actions"><button type="button" id="fmCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="fmPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button>${ro ? '<button type="button" id="fmEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="fmSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
     document.getElementById('rzGridContent').innerHTML = body;
