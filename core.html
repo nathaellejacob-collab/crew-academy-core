@@ -315,6 +315,8 @@
   .certif-kpis{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
   .certif-kpi{padding:8px 14px; background:#faf9f4; border:1px solid var(--line); border-radius:10px; font-size:12px; color:var(--ink-soft);}
   .certif-kpi b{display:block; font-size:20px; color:var(--navy-2);}
+  .rz-save-btn{display:block; margin:4px auto 0; font:inherit; font-size:12px; font-weight:700; padding:5px 10px; border:none; border-radius:8px; background:var(--teal); color:#fff; cursor:pointer;}
+  .rz-save-btn:hover{filter:brightness(1.1);}
   .certif-kpi.evo{background:linear-gradient(135deg,#e6f3f3,#f4faf9); border:2px solid var(--teal); box-shadow:0 2px 8px rgba(47,114,118,.18); padding:10px 18px; font-weight:700; color:var(--teal);}
   .certif-kpi.evo b{font-size:28px; color:var(--teal);}
   .certif-kpi.evo::before{content:'🚀 Évolution interne'; display:block; font-size:10px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:2px;}
@@ -2911,7 +2913,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
             + sub('Utiliser l\'onglet')
             + steps([
               'Tape le nom du formateur (Prénom NOM) dans « Ajouter un formateur au suivi », puis clique <strong>➕ Ajouter</strong>. S\'il correspond à un profil existant, sa fiche lui sera accessible en consultation.',
-              'Renseigne la date de chaque étape dans la ligne du formateur : elle s\'enregistre dès que tu la choisis.',
+              'Renseigne la date de chaque étape dans la ligne du formateur : choisis-la puis clique sur « Enregistrer » ou appuie sur Entrée.',
               'Une date à venir est affichée comme « <strong>prévue</strong> » et comptée comme réalisée une fois passée.',
               'La colonne <strong>Avancement</strong> indique la prochaine étape. Quand les 4 formations probatoires sont faites, le formateur passe en « Prêt pour la certification ».',
               'Le <strong>🗑️</strong> retire un formateur du suivi (sa fiche est supprimée).',
@@ -2927,7 +2929,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
             + sub('Utiliser l\'onglet')
             + steps([
               'Tape le nom du RZ, puis clique <strong>➕ Ajouter</strong>.',
-              'Renseigne les dates (période probatoire, vu par le superviseur, prêt à être certifié, dates de certification) : elles s\'enregistrent dès que tu les choisis.',
+              'Renseigne les dates (période probatoire, vu par le superviseur, prêt à être certifié, dates de certification) et les % : saisis-les puis clique sur « Enregistrer » ou appuie sur Entrée : rien n\'est enregistré avant.',
               'Clique <strong>📝 Grille</strong> sur une certification : réponds ligne par ligne (Validé / En cours / Non acquis / Non évalué). Le % de chaque rubrique et le résultat se calculent tout seuls.',
               'Clique <strong>Enregistrer</strong> : la date, le % et l\'évaluateur sont reportés dans le suivi. Tu peux rouvrir la grille plus tard pour la corriger.',
               'Le menu « Statut » d\'une ligne fait passer un RZ de « Probatoire » à « En poste » une fois certifié : il quitte alors ce tableau et est compté dans « RZ passés en poste ». Le <strong>🗑️</strong> retire un RZ du suivi.',
@@ -5976,7 +5978,9 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     document.getElementById('certifFilter').addEventListener('change', e => { certifFilter = e.target.value; renderCertifTable(); });
     if(!edit) return;
     certifTableWrap.querySelectorAll('.certif-input').forEach(inp => {
-      inp.addEventListener('change', () => certifSauver(inp.dataset.nom, {[inp.dataset.champ]: inp.value}, inp));
+      const sauver = () => certifSauver(inp.dataset.nom, {[inp.dataset.champ]: inp.value}, inp);
+      if(inp.type === 'date') armerSaisieDate(inp, sauver);
+      else inp.addEventListener('change', sauver);
     });
     certifTableWrap.querySelectorAll('.certif-delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -5984,6 +5988,25 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         if(!window.confirm('Retirer ' + displayName(nom) + ' du suivi de certification ?\n\nSa fiche (toutes les dates saisies) sera supprimée.')) return;
         await certifAppel({sheet:'delete_certification_formateur', nom});
       });
+    });
+  }
+
+  // Saisie (date, %, évaluateur) : rien n'est enregistré tant que la personne n'a pas cliqué sur « Enregistrer » ou appuyé sur Entrée.
+  function armerSaisieDate(inp, enregistrer){
+    const orig = inp.defaultValue;
+    let btn = null;
+    const maj = () => {
+      if(inp.value === orig){ if(btn){ btn.remove(); btn = null; } return; }
+      if(btn) return;
+      btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'rz-save-btn'; btn.textContent = '💾 Enregistrer';
+      btn.addEventListener('click', () => { btn.disabled = true; enregistrer(); });
+      inp.insertAdjacentElement('afterend', btn);
+    };
+    inp.addEventListener('input', maj);
+    inp.addEventListener('change', maj);
+    inp.addEventListener('keydown', e => {
+      if(e.key === 'Enter' && inp.value !== orig){ e.preventDefault(); if(btn) btn.disabled = true; enregistrer(); }
     });
   }
 
@@ -6238,7 +6261,9 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     rzRenderPlan();
 
     document.getElementById('rzTab').querySelectorAll('.rz-in').forEach(inp => {
-      inp.addEventListener('change', () => { inp.disabled = true; rzAppel({sheet:'update_certification_rz', nom: inp.dataset.nom, champs: {[inp.dataset.champ]: inp.value}}); });
+      const sauver = () => { inp.disabled = true; rzAppel({sheet:'update_certification_rz', nom: inp.dataset.nom, champs: {[inp.dataset.champ]: inp.value}}); };
+      if(inp.tagName === 'INPUT') armerSaisieDate(inp, sauver);
+      else inp.addEventListener('change', sauver);
     });
     document.getElementById('rzTab').querySelectorAll('.rz-grid-btn').forEach(btn => {
       btn.addEventListener('click', () => rzOpenGrid(btn.dataset.nom, btn.dataset.slot, btn.dataset.view === '1'));
@@ -6642,7 +6667,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       fmRender();
     });
     certifEvalWrap.querySelectorAll('button[data-fm-per]').forEach(b => b.addEventListener('click', () => fmOpen(b.dataset.fmNom, b.dataset.fmPer, b.dataset.fmRo === '1')));
-    certifEvalWrap.querySelectorAll('input[data-fm-prev]').forEach(inp => inp.addEventListener('change', async () => {
+    certifEvalWrap.querySelectorAll('input[data-fm-prev]').forEach(inp => armerSaisieDate(inp, async () => {
       inp.disabled = true;
       const d = await fmAppel({ sheet:'update_prevue_formateur', nom: inp.dataset.nom, annee: fmAnnee, periode: inp.dataset.per, prevue: inp.value });
       if(d) fmEvals = d.evaluations || fmEvals;
