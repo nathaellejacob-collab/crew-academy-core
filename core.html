@@ -7138,13 +7138,42 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const g = suGrid, err = document.getElementById('suError'); err.style.display = 'none';
     const date = document.getElementById('suDate').value;
     if(!date){ err.textContent = 'Renseigne la date du suivi.'; err.style.display = 'block'; return; }
+    // Suivi à 4 semaines : tous les commentaires sont obligatoires (un par question + le commentaire général).
+    if(g.type === 'j30'){
+      const manque = [], champs = [];
+      g.form.q30.forEach((q, i) => {
+        const el = rzGridModal.querySelector('.rz-line-com[data-c="30-' + i + '"]');
+        if(!String((g.rep['c30-' + i]) || '').trim()){
+          manque.push('Question ' + (i + 1) + ' : « ' + (q.t.length > 70 ? q.t.slice(0, 70) + '…' : q.t) + ' »');
+          if(el) champs.push(el);
+        }
+      });
+      const gen = document.getElementById('suCom');
+      if(gen && !gen.value.trim()){ manque.push('Commentaires (30 jours), en bas de la grille'); champs.push(gen); }
+      rzGridModal.querySelectorAll('.rz-line-com[data-c], #suCom').forEach(el => { el.style.outline = ''; });
+      if(manque.length){
+        champs.forEach(el => { el.style.outline = '2px solid var(--red)'; el.addEventListener('input', () => { el.style.outline = ''; }, { once: true }); });
+        err.innerHTML = '<b>Impossible d\'enregistrer le suivi à 4 semaines</b> : tous les commentaires sont obligatoires. Complète :<br>' + manque.map(m => '• ' + rzEsc(m)).join('<br>');
+        err.style.display = 'block';
+        if(champs[0]) champs[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return;
+      }
+    }
     const r = suCalc(g.rep, g.form, g.type);
     const C = g.type === 'j30' ? g.form.criteres.map((t, i) => ({ t, v: g.rep['k' + i] || '' })) : [];
     const reponses = Object.assign({}, g.rep, { _grille: g.form });
     const com = (document.getElementById('suCom') || { value: '' }).value.trim();
     const btn = document.getElementById('suSave'); btn.disabled = true;
     const d = await suCall({ sheet:'save_suivi_integration', nom: g.nom, type: g.type, date, par: document.getElementById('suPar').value.trim(), pct: r.pct === null ? '' : Math.round(r.pct * 10) / 10, reponses, resume: { p: r.p, b: r.b, Q: r.Q, C }, commentaire: com });
-    if(d){ suSuivis = d.suivis || suSuivis; suClose(); suRender(); } else btn.disabled = false;
+    if(d){
+      suSuivis = d.suivis || suSuivis;
+      // La date du suivi est aussi reportée dans « Formations obligatoires » de l'équipier (fait côté serveur).
+      if(d.formationMaj){
+        const emp = employees.find(e => e.nom === d.formationMaj.nom && (!currentRestaurant || e.restaurant === currentRestaurant));
+        if(emp){ emp[d.formationMaj.field] = d.formationMaj.value; try { computeDerived(emp); refreshAllTabs(); } catch(e){} }
+      }
+      suClose(); suRender();
+    } else btn.disabled = false;
   }
   function suPdf(){
     const g = suGrid; if(!g) return;
