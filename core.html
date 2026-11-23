@@ -317,6 +317,8 @@
   .certif-kpi b{display:block; font-size:20px; color:var(--navy-2);}
   .rz-save-btn{display:block; margin:4px auto 0; font:inherit; font-size:12px; font-weight:700; padding:5px 10px; border:none; border-radius:8px; background:var(--teal); color:#fff; cursor:pointer;}
   .rz-save-btn:hover{filter:brightness(1.1);}
+  .rz-dirty{outline:2px solid var(--amber) !important; background:#fff6e0 !important;}
+  .rz-save-note{display:block; text-align:center; font-size:11px; font-weight:700; color:var(--amber-dark); margin-top:3px;}
   .certif-kpi.evo{background:linear-gradient(135deg,#e6f3f3,#f4faf9); border:2px solid var(--teal); box-shadow:0 2px 8px rgba(47,114,118,.18); padding:10px 18px; font-weight:700; color:var(--teal);}
   .certif-kpi.evo b{font-size:28px; color:var(--teal);}
   .certif-kpi.evo::before{content:'🚀 Évolution interne'; display:block; font-size:10px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:2px;}
@@ -5994,14 +5996,18 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   // Saisie (date, %, évaluateur) : rien n'est enregistré tant que la personne n'a pas cliqué sur « Enregistrer » ou appuyé sur Entrée.
   function armerSaisieDate(inp, enregistrer){
     const orig = inp.defaultValue;
-    let btn = null;
+    let btn = null, wrap = null;
     const maj = () => {
-      if(inp.value === orig){ if(btn){ btn.remove(); btn = null; } return; }
-      if(btn) return;
+      if(inp.value === orig){ if(wrap){ wrap.remove(); wrap = null; btn = null; } inp.classList.remove('rz-dirty'); return; }
+      inp.classList.add('rz-dirty');
+      if(wrap) return;
+      wrap = document.createElement('div');
+      wrap.innerHTML = '<span class="rz-save-note">● non enregistré</span>';
       btn = document.createElement('button');
       btn.type = 'button'; btn.className = 'rz-save-btn'; btn.textContent = '💾 Enregistrer';
       btn.addEventListener('click', () => { btn.disabled = true; enregistrer(); });
-      inp.insertAdjacentElement('afterend', btn);
+      wrap.appendChild(btn);
+      inp.insertAdjacentElement('afterend', wrap);
     };
     inp.addEventListener('input', maj);
     inp.addEventListener('change', maj);
