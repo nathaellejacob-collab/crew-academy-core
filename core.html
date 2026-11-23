@@ -6609,9 +6609,25 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   // Échéances indicatives de chaque évaluation (à ajuster avec la direction de la formation).
   const FM_ECH = { t1:[3,31], t2:[6,30], bilan:[7,31], t3:[9,30], t4:[12,31], annuel:[1,31,1] };  // l'évaluation annuelle se fait en janvier de l'année suivante
   let fmFilter = 'todo';
+  // Un trimestre sans évaluation n'est pas dû si le formateur n'était pas encore certifié à la fin de ce trimestre (il a évolué en cours d'année) :
+  // il n'apparaît pas dans le tableau et n'entre pas dans son évaluation. Le bilan de juillet suit ses 2 trimestres, l'annuelle les 4.
+  function fmTrimNA(rec, per){
+    const cd = String(rec.certifie || '').slice(0, 10), e = fmEvalDe(rec.nom, per);
+    if(!cd || (e && e.date)) return false;
+    const fin = fmAnnee + '-' + String(FM_ECH[per][0]).padStart(2, '0') + '-' + String(FM_ECH[per][1]).padStart(2, '0');
+    return cd > fin;
+  }
+  function fmNA(rec, per){
+    if(per === 'bilan') return fmTrimNA(rec, 't1') && fmTrimNA(rec, 't2');
+    if(per === 'annuel') return ['t1', 't2', 't3', 't4'].every(p => fmTrimNA(rec, p));
+    return fmTrimNA(rec, per);
+  }
+  const fmAttendus = (rec, pers) => pers.filter(p => !fmTrimNA(rec, p)).length;
   function fmLignes(){
     const today = fmIso(new Date()), lignes = [];
-    certifRecords.forEach(rec => FM_COLS.forEach(col => {
+    // Seuls les formateurs certifiés figurent dans le tableau des évaluations.
+    certifRecords.filter(rec => certifStatut(rec).cls === 'green').forEach(rec => FM_COLS.forEach(col => {
+      if(fmNA(rec, col.k)) return;
       const e = fmEvalDe(rec.nom, col.k), fait = !!(e && e.date);
       const ech = (Number(fmAnnee) + (FM_ECH[col.k][2] || 0)) + '-' + String(FM_ECH[col.k][0]).padStart(2, '0') + '-' + String(FM_ECH[col.k][1]).padStart(2, '0');
       const prev = (e && e.prevue) || '';
@@ -6739,8 +6755,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           <div class="rz-axe-wrap"><input type="text" class="rz-axe-com" data-cs="${si}" value="${rzEsc(rep['cs' + si] || '')}" maxlength="500" placeholder="Commentaire sur cet axe"${ro ? ' disabled' : ''}></div></div>`).join('')}
         <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires et engagement du collaborateur${fmTa('fmCom', g.ev && g.ev.commentaire, '', ro, 3)}</label>`;
     } else if(per === 'bilan'){
-      const c = fmCumul(g.nom, ['t1', 't2']);
-      body = `<p class="modal-sub" style="margin-top:0;">Bilan intermédiaire de juillet — niveau de maîtrise calculé sur les 1er et 2e trimestres ${fmAnnee}${c.n < 2 ? ' <b>(il manque un trimestre : résultat provisoire)</b>' : ''}</p>${fmHead()}
+      const c = fmCumul(g.nom, ['t1', 't2']), att = fmAttendus(certifRecords.find(r => r.nom === g.nom) || {}, ['t1', 't2']);
+      body = `<p class="modal-sub" style="margin-top:0;">Bilan intermédiaire de juillet — niveau de maîtrise calculé sur les 1er et 2e trimestres ${fmAnnee}${c.n < att ? ' <b>(il manque un trimestre : résultat provisoire)</b>' : ''}</p>${fmHead()}
         ${form.sections.map((s, si) => { const ax = c.axes[s.titre];
           const ligs = s.lignes.map((l, li) => { const x = c.lignes[s.titre + '||' + l.t]; const pc = x && x.b ? x.p / x.b * 100 : null; return { l, li, pc }; });
           const vals = ligs.filter(x => x.pc !== null), moy = vals.length ? vals.reduce((a, x) => a + x.pc, 0) / vals.length : null;
@@ -6750,7 +6766,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires et engagement du collaborateur${fmTa('fmCom', g.ev && g.ev.commentaire, '', ro, 3)}</label>`;
     } else {
       const c = fmCumul(g.nom, ['t1', 't2', 't3', 't4']);
-      body = `<p class="modal-sub" style="margin-top:0;">Évaluation annuelle ${fmAnnee} — bilan des ${c.n} trimestre${c.n > 1 ? 's' : ''} saisi${c.n > 1 ? 's' : ''}${c.n < 4 ? ' <b>(provisoire)</b>' : ''}</p>${fmHead()}
+      body = `<p class="modal-sub" style="margin-top:0;">Évaluation annuelle ${fmAnnee} — bilan des ${c.n} trimestre${c.n > 1 ? 's' : ''} saisi${c.n > 1 ? 's' : ''}${c.n < fmAttendus(certifRecords.find(r => r.nom === g.nom) || {}, ['t1', 't2', 't3', 't4']) ? ' <b>(provisoire)</b>' : ''}</p>${fmHead()}
         ${fmBlocTitre('I – Bilan annuel des critères de performance')}
         <div class="rz-sec" style="margin-top:6px;">${form.sections.map(s => { const a = c.axes[s.titre]; const pc = a && a.b ? a.p / a.b * 100 : null; return `<div class="rz-line"><div class="rz-line-txt"><b>${rzEsc(s.titre)}</b></div><span class="action-pill ${fmCls(pc, form)}">${rzFmtPct(pc)}</span></div>`; }).join('')}</div>
         ${fmBlocTitre('II – Objectifs pour l\'année suivante')}
