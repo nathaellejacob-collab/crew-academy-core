@@ -1166,6 +1166,19 @@
   .comparaison-bad{color:var(--red); font-weight:800;}
   .comparaison-warn{color:var(--orange); font-weight:800;}
   .comparaison-ok{color:var(--green); font-weight:700;}
+  .ya-table{border-collapse:collapse; width:100%;}
+  table.ya-table thead th{width:auto; max-width:none; position:static; cursor:default;}
+  .ya-table th, .ya-table td{border:1px solid #cfcab8; text-align:center; padding:8px 3px; white-space:nowrap;}
+  .ya-table th.ya-g{background:#e4dfcb; color:var(--navy); font-size:12.5px; text-transform:none; letter-spacing:0;}
+  .ya-table th.ya-s{background:#f1eedf; font-size:11px; color:var(--ink-soft); text-transform:none; letter-spacing:0; font-weight:700; padding:5px 6px;}
+  .ya-table th.ya-name, .ya-table td.ya-name{text-align:left; position:sticky; left:0; z-index:1; min-width:100px; padding-left:8px;}
+  .ya-table th.ya-name{background:#e4dfcb;}
+  .ya-table td.ya-name{background:#fff; font-weight:700;}
+  .ya-table .ya-prevc{color:var(--ink-soft); font-size:13px;}
+  .ya-table .ya-nowc{font-size:15px; font-weight:800; color:var(--navy);}
+  .ya-table td.ya-evo .action-pill{padding:2px 5px; font-size:10.5px;}
+  .ya-table tr.ya-total td{background:#eaf3f1; border-top:2px solid var(--teal); border-bottom:2px solid var(--teal);}
+  .ya-table tr.ya-total td.ya-name{background:#eaf3f1; color:var(--teal); font-weight:800;}
   #comparaisonTable thead th{cursor:pointer;}
   #comparaisonTable thead th:hover{color:var(--ink);}
 
@@ -1484,6 +1497,14 @@
     <div class="matrix-wrap">
       <table class="matrix-table" id="comparaisonTable"></table>
     </div>
+  </div>
+
+  <div class="panel-block" id="comparatifAnnuel">
+    <div class="panel-head">
+      <h3>Année sur année</h3>
+      <p>Pour chaque restaurant : l'année précédente, l'année en cours et l'évolution.</p>
+    </div>
+    <div id="comparatifAnnuelBody"><p style="color:var(--ink-soft);font-size:13px;">Chargement…</p></div>
   </div>
 </section>
 
@@ -3021,6 +3042,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
             '<strong>Taux de polyvalence :</strong> le même calcul que le « Taux de polyvalence global » de l\'onglet Postes &amp; Polyvalence. Pour chaque poste Production et Service, on prend la part des équipiers formés, puis on fait la moyenne. Les postes « Autres » (ouverture, fermeture, plonge…) n\'y entrent pas.',
             '<strong>Effectif total</strong> = équipiers + équipe de gestion. <strong>Formations en retard</strong> et <strong>Échéance &lt; 30 j</strong> comptent les personnes (équipiers et gestion) dont la formation la plus urgente est en retard ou à échéance sous 30 jours.',
             'Clique sur l\'en-tête d\'une colonne pour trier les restaurants (par exemple par nombre de formations en retard).',
+            '<strong>Année sur année</strong> (en bas de l\'onglet) : pour chaque restaurant, la polyvalence, les formateurs et RZ certifiés dans l\'année et le coût de la formation, l\'année précédente à côté de l\'année en cours, avec l\'évolution. La polyvalence est enregistrée automatiquement chaque mois à partir de maintenant : la comparaison avec l\'année précédente se remplit au fil du temps.',
             'Pour agir sur un restaurant, choisis-le dans le sélecteur en haut de la page.',
           ]));
       }
@@ -4681,7 +4703,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       statsWrap.style.display = (tab === 'polyvalence' || tab === 'comparaison' || tab === 'activite' || tab === 'planification' || tab === 'cout-formation' || tab === 'integration' || tab === 'suivis' || tab === 'certification' || tab === 'certification-rz' || tab === 'alternant') ? 'none' : '';
       statsRowEl.style.display = tab === 'formations' ? '' : 'none';
       statsRowGestionEl.style.display = tab === 'gestion' ? '' : 'none';
-      if(tab === 'comparaison'){ renderComparaisonCharts(); renderComparaison(); }
+      if(tab === 'comparaison'){ renderComparaisonCharts(); renderComparaison(); renderComparatifAnnuel(); }
       if(tab === 'activite'){ renderActivite(); }
       if(tab === 'planification'){ loadPersistedPlanning(); }
       if(tab === 'integration' && !integrationLoadedOnce){
@@ -5019,6 +5041,48 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       : 0;
 
     return { restaurant: r, totalEmployees: empR.length, totalManagers: mgrR.length, total: all.length, red, orange, green, polyAvg, prodAvg, servAvg };
+  }
+
+  // ---- Comparatif d'une année sur l'autre (gérant) ----
+  async function renderComparatifAnnuel(){
+    const box = document.getElementById('comparatifAnnuelBody');
+    if(!box) return;
+    const appel = async obj => { const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody(obj)) }); const d = await res.json(); if(!d.ok) throw new Error(d.error || 'Échec du chargement'); return d; };
+    try{
+      // Photo du mois : le taux de polyvalence n'est connu qu'à l'instant T, on l'enregistre pour pouvoir le comparer plus tard.
+      const stats = restaurants.map(r => computeRestaurantStats(r)).filter(x => x.totalEmployees > 0).map(x => ({ restaurant: x.restaurant, taux: Math.round(x.polyAvg * 1000) / 10, effectif: x.totalEmployees }));
+      if(stats.length) await appel({ sheet:'save_photo_polyvalence', stats });
+      const d = await appel({ sheet:'get_comparatif_annuel' });
+      const Y = String(d.annee), P = String(d.annee - 1);
+      const dernier = (nom, an) => d.polyvalence.filter(x => x.restaurant === nom && x.mois.slice(0, 4) === an).sort((a, b) => a.mois.localeCompare(b.mois)).pop();
+      const eur = n => (Math.round(n)).toLocaleString('fr-FR') + ' €';
+      const fleche = (a, b, bonSens) => { // a = année précédente, b = année en cours
+        if(a === null || a === undefined || b === null || b === undefined) return '';
+        const dlt = Math.round((b - a) * 10) / 10;
+        if(!dlt) return '<span class="action-pill gray">=</span>';
+        const cls = bonSens === 0 ? 'gray' : ((dlt > 0) === (bonSens > 0) ? 'green' : 'red');
+        return '<span class="action-pill ' + cls + '">' + (dlt > 0 ? '▲ +' : '▼ −') + String(Math.abs(dlt)).replace('.', ',') + '</span>';
+      };
+      const cell = (a, b, fmt, bonSens) => '<td class="ya-c ya-prevc">' + (a === null || a === undefined ? '—' : fmt(a)) + '</td><td class="ya-c ya-nowc">' + (b === null || b === undefined ? '—' : fmt(b)) + '</td><td class="ya-c ya-evo">' + (fleche(a, b, bonSens) || '—') + '</td>';
+      const pct = n => String(n).replace('.', ',') + ' %';
+      const lignes = d.restaurants.map(r => {
+        const a = dernier(r.restaurant, P), b = dernier(r.restaurant, Y);
+        return { nom: r.restaurant, pa: a ? a.taux : null, pb: b ? b.taux : null, fa: r.formateurs[P], fb: r.formateurs[Y], ra: r.rz[P], rb: r.rz[Y], ca: r.cout[P], cb: r.cout[Y] };
+      });
+      const somme = k => lignes.reduce((t, l) => t + (l[k] || 0), 0);
+      const moy = k => { const v = lignes.map(l => l[k]).filter(x => x !== null); return v.length ? Math.round(v.reduce((t, x) => t + x, 0) / v.length * 10) / 10 : null; };
+      const total = { nom: 'Tous les restaurants', pa: moy('pa'), pb: moy('pb'), fa: somme('fa'), fb: somme('fb'), ra: somme('ra'), rb: somme('rb'), ca: somme('ca'), cb: somme('cb') };
+      const tr = (l, tous) => '<tr' + (tous ? ' class="ya-total"' : '') + '><td class="name-col ya-name">' + l.nom + '</td>' + cell(l.pa, l.pb, pct, 1) + cell(l.fa, l.fb, String, 1) + cell(l.ra, l.rb, String, 1) + cell(l.ca, l.cb, eur, 0) + '</tr>';
+      const premier = d.polyvalence.map(x => x.mois).sort()[0];
+      const moisFr = m => { const [y, mm] = m.split('-'); return ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][Number(mm) - 1] + ' ' + y; };
+      const grp = (ico, lib) => '<th class="ya-g" colspan="3">' + ico + ' ' + lib + '</th>';
+      const sub = '<th class="ya-s">' + P + '</th><th class="ya-s">' + Y + '</th><th class="ya-s">Évolution</th>';
+      box.innerHTML = '<div class="matrix-wrap"><table class="matrix-table ya-table"><thead><tr><th class="ya-g ya-name" rowspan="2">Restaurant</th>' + grp('🎯', 'Polyvalence') + grp('🏅', 'Formateurs certifiés') + grp('🧭', 'RZ certifiés') + grp('💶', 'Coût de la formation') + '</tr><tr>' + sub + sub + sub + sub + '</tr></thead><tbody>'
+        + tr(total, true) + lignes.map(l => tr(l, false)).join('') + '</tbody></table></div>'
+        + '<p class="certif-sub" style="margin:8px 0 0;">Polyvalence : dernière valeur connue de chaque année' + (premier ? ' (suivi mensuel démarré en ' + moisFr(premier) + ' : « — » tant qu\'il n\'y a pas de valeur pour l\'année précédente)' : '') + '. Formateurs et RZ : certifiés dans l\'année. Coût : total des formations enregistrées dans l\'année.</p>';
+    } catch(err){
+      box.innerHTML = '<p style="color:var(--red);font-size:13px;">Erreur de chargement : ' + err.message + '</p>';
+    }
   }
 
   function renderComparaisonCharts(){
