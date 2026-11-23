@@ -315,6 +315,11 @@
   .certif-kpis{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
   .certif-kpi{padding:8px 14px; background:#faf9f4; border:1px solid var(--line); border-radius:10px; font-size:12px; color:var(--ink-soft);}
   .certif-kpi b{display:block; font-size:20px; color:var(--navy-2);}
+  .fm-schema{width:100%; table-layout:fixed; border-collapse:collapse; text-align:center;}
+  .fm-schema th, .fm-schema td{padding:6px 2px; font-size:12px; word-break:normal; overflow-wrap:anywhere;}
+  .fm-schema th{font-size:11px; padding:6px 0; overflow-wrap:normal;}
+  .fm-schema th:first-child, .fm-schema td:first-child{width:26%; text-align:left; padding-left:6px;}
+  .fm-schema .action-pill{padding:2px 6px; font-size:11px; white-space:nowrap;}
   .rz-save-btn{display:block; margin:4px auto 0; font:inherit; font-size:12px; font-weight:700; padding:5px 10px; border:none; border-radius:8px; background:var(--teal); color:#fff; cursor:pointer;}
   .rz-save-btn:hover{filter:brightness(1.1);}
   .rz-dirty{outline:2px solid var(--amber) !important; background:#fff6e0 !important;}
@@ -6609,12 +6614,15 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   // Échéances indicatives de chaque évaluation (à ajuster avec la direction de la formation).
   const FM_ECH = { t1:[3,31], t2:[6,30], bilan:[7,31], t3:[9,30], t4:[12,31], annuel:[1,31,1] };  // l'évaluation annuelle se fait en janvier de l'année suivante
   let fmFilter = 'todo';
-  // Un trimestre sans évaluation n'est pas dû si le formateur n'était pas encore certifié à la fin de ce trimestre (il a évolué en cours d'année) :
+  // Un trimestre sans évaluation n'est pas dû si le formateur a été certifié bien après sa fin (il a évolué en cours d'année) :
   // il n'apparaît pas dans le tableau et n'entre pas dans son évaluation. Le bilan de juillet suit ses 2 trimestres, l'annuelle les 4.
   function fmTrimNA(rec, per){
     const cd = String(rec.certifie || '').slice(0, 10), e = fmEvalDe(rec.nom, per);
     if(!cd || (e && e.date)) return false;
-    const fin = fmAnnee + '-' + String(FM_ECH[per][0]).padStart(2, '0') + '-' + String(FM_ECH[per][1]).padStart(2, '0');
+    // On laisse la possibilité d'évaluer le dernier trimestre terminé avant la certification (et le bilan de juillet) :
+    // un trimestre n'est écarté que si la certification date d'après la fin du trimestre SUIVANT.
+    const suiv = { t1: 't2', t2: 't3', t3: 't4' }[per];
+    const fin = suiv ? fmAnnee + '-' + String(FM_ECH[suiv][0]).padStart(2, '0') + '-' + String(FM_ECH[suiv][1]).padStart(2, '0') : (Number(fmAnnee) + 1) + '-03-31';
     return cd > fin;
   }
   function fmNA(rec, per){
@@ -6673,6 +6681,16 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         <button type="button" class="rz-grid-btn" id="fmEditGrid">⚙️ Modifier la grille d'évaluation</button>
         ${fmArchLoaded ? (arch ? '<span class="certif-sub" style="display:inline;font-weight:700;">🗄️ Archive (lecture seule)</span>' : '') : '<button type="button" class="rz-grid-btn" id="fmArchBtn">🗄️ Voir les archives</button>'}
         <span class="certif-sub" style="display:inline;">${fmLegend(form)}</span></div>
+      <details style="margin:0 0 10px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--teal);">ℹ️ Quelles évaluations sont dues selon la date de certification ?</summary>
+        <div class="matrix-wrap" style="margin-top:8px;"><table class="fm-schema">
+          <thead><tr><th>Situation</th><th>T1</th><th>T2</th><th>Bilan</th><th>T3</th><th>T4</th><th>Annuel</th></tr></thead>
+          <tbody>
+            <tr><td>Certifié avant fin juin</td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td></tr>
+            <tr><td>Certifié mi-juillet</td><td><span class="action-pill gray">non</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td></tr>
+            <tr><td>Certifié mi-octobre</td><td><span class="action-pill gray">non</span></td><td><span class="action-pill gray">non</span></td><td><span class="action-pill gray">non</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td></tr>
+            <tr><td>Pas encore certifié</td><td colspan="6"><span class="action-pill gray">absent du tableau</span></td></tr>
+          </tbody></table></div>
+        <p class="certif-sub" style="margin:6px 0 0;">« non » = évaluation écartée. Un trimestre est écarté si le formateur a été certifié après la fin du trimestre suivant : le dernier trimestre terminé avant la certification reste dû. Le bilan de juillet reste tant que T1 ou T2 est dû ; l'évaluation annuelle, tant qu'un trimestre est dû.</p></details>
       ${!certifRecords.length ? '<p style="color:var(--ink-soft);font-size:13px;">Ajoute un formateur au suivi pour commencer ses évaluations.</p>' : (!lignes.length ? '<p style="color:var(--ink-soft);font-size:13px;">Rien à afficher avec ce filtre.</p>' : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
         <th>Formateur</th><th>Évaluation</th><th data-tip="Date limite indicative pour réaliser l'évaluation">Échéance</th><th data-tip="Date à laquelle tu prévois de faire l'évaluation">Date prévue</th><th>Statut</th><th>Résultat</th><th data-tip="Prime annuelle : palier atteint puis prorata des heures travaillées">Prime annuelle</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`)}`;
     document.getElementById('fmFilter').addEventListener('change', e => { fmFilter = e.target.value; fmRender(); });
