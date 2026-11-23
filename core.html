@@ -2910,6 +2910,18 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           ]));
       }
 
+      // ----- 5 ter. Suivis à 4 semaines et à 60 jours -----
+      section('suivis', '🤝', 'var(--teal)', 'Suivis à 4 semaines et à 60 jours', 'Les points faits avec chaque nouvel équipier',
+          para('Le formateur remplit une grille avec le nouvel équipier, à 4 semaines puis à 60 jours après son arrivée. Elle se trouve dans l\'onglet <strong>Suivis 4 semaines / 60 jours</strong>.')
+            + sub('Remplir un suivi')
+            + steps([
+              'Choisis l\'équipier et le suivi (4 semaines ou 60 jours), puis ouvre la grille.',
+              'Réponds ligne par ligne et renseigne <strong>la date du suivi</strong>.',
+              'Pour le <strong>suivi à 4 semaines</strong>, <strong>tous les commentaires sont obligatoires</strong> (un par question, plus le commentaire général). S\'il en manque, le suivi ne peut pas être validé : un message d\'erreur indique précisément les champs à compléter.',
+              'Clique <strong>Enregistrer</strong> : la date du suivi est <strong>reportée automatiquement</strong> dans « Formations obligatoires » de l\'équipier (colonnes Suivi à 4 semaines / Suivi à 60 jours).',
+            ])
+            + tip('Rien n\'est enregistré tant que tu n\'as pas cliqué sur « Enregistrer ».'));
+
       // ----- 5 bis. Certification des formateurs -----
       if(accesResponsable) section('certification', '🏅', 'var(--plum)', 'Certification formateurs', 'Le parcours pour devenir formateur certifié',
           para('Le suivi de chaque formateur sur son parcours de certification, étape par étape, pour savoir en un coup d\'œil où il en est. Il se trouve dans le menu <strong>Certification</strong> (clique dessus pour le dérouler).')
@@ -2928,6 +2940,17 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
               'La colonne <strong>Avancement</strong> indique la prochaine étape. Quand les 4 formations probatoires sont faites, le formateur passe en « Prêt pour la certification ».',
               'Le <strong>🗑️</strong> retire un formateur du suivi (sa fiche est supprimée).',
             ])
+            + sub('Formateur déjà en poste avant le site')
+            + para('Pour un formateur devenu formateur avant la création du site, coche la case <strong>« Certifié avant la création du site »</strong> dans la colonne « Certifié le » (ajoute-le d\'abord au suivi si besoin) : pas de date à inventer. Il compte comme certifié, apparaît dans le tableau des évaluations avec toutes ses évaluations de l\'année, et tu peux décocher la case à tout moment.')
+            + sub('Tableau des évaluations')
+            + para('Sous le suivi, le tableau des évaluations ne montre que les <strong>formateurs certifiés</strong>. Seul le <strong>trimestre en cours à la date de certification</strong>, et les suivants, sont dus ; les trimestres précédents sont écartés (ce n\'est pas un oubli).')
+            + list([
+              '<strong>Certifié de janvier à mars</strong> : T1, T2, bilan de juillet, T3, T4 et annuel.',
+              '<strong>Certifié d\'avril à juin</strong> : T2, bilan de juillet, T3, T4 et annuel.',
+              '<strong>Certifié de juillet à septembre</strong> : T3, T4 et annuel.',
+              '<strong>Certifié d\'octobre à décembre</strong> : T4 et annuel.',
+            ])
+            + para('Le bilan de juillet est dû tant que T1 ou T2 l\'est ; l\'évaluation annuelle, tant qu\'un trimestre l\'est. Un schéma mois par mois se déplie au-dessus du tableau (« ℹ️ Quelles évaluations sont dues… »).')
             + tip('Comme le reste du site, seules l\'année en cours et l\'année précédente sont conservées : une fiche dont toutes les dates sont plus anciennes est supprimée automatiquement. Les actions sont notées dans le journal d\'activité, sous « Certification formateurs ».'));
 
       if(accesCertifRZ) section('certification-rz', '🧭', 'var(--teal)', 'Certification RZ', 'Suivi des responsables de zone en période probatoire',
