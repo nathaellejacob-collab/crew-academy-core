@@ -5901,8 +5901,13 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const d = new Date(v.slice(0, 10) + 'T23:59:59');
     return !isNaN(d) && d <= new Date();
   }
+  // Formateur certifié avant la création du site : pas de date connue, on enregistre la date repère 1900-01-01
+  // (jamais purgée, toujours « passée », et toutes ses évaluations de l'année sont dues).
+  const CERTIF_HISTO = '1900-01-01';
+  const certifHisto = v => String(v || '').slice(0, 10) === CERTIF_HISTO;
   function certifDateLibelle(v){
     if(!v) return '—';
+    if(certifHisto(v)) return 'avant la création du site';
     const d = parseDate(v.slice(0, 10));
     return frDate(d);
   }
@@ -5912,7 +5917,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const probPrevues = CERTIF_PROB.filter(k => rec[k]).length;
     const prochaine = CERTIF_STEPS.find(st => !certifPassee(rec[st.key]));
     if(rec.certifie && certifPassee(rec.certifie)){
-      return {cls:'green', libelle:'✅ Certifié', sub:'le ' + certifDateLibelle(rec.certifie), rang:3};
+      return {cls:'green', libelle:'✅ Certifié', sub:(certifHisto(rec.certifie) ? '' : 'le ') + certifDateLibelle(rec.certifie), rang:3};
     }
     if(!faites.length && !probPrevues && !rec.certifie){
       return {cls:'gray', libelle:'Pas commencé', sub:'', rang:0};
@@ -5970,7 +5975,12 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         <td><b>${displayName(rec.nom)}</b><div style="margin-top:4px;"><span class="action-pill ${st.cls}">${st.libelle}</span></div>${st.sub ? `<span class="certif-sub">${st.sub}</span>` : ''}</td>
         ${CERTIF_STEPS.map(stp => cellule(rec, stp.key)).join('')}
         ${probCell}
-        ${cellule(rec, 'certifie')}
+        ${(() => {
+          const histo = certifHisto(rec.certifie);
+          const base = histo ? `<td><div>${certifDateLibelle(rec.certifie)}</div><div style="margin-top:4px;"><span class="action-pill green">Réalisée</span></div>` : cellule(rec, 'certifie').replace(/<\/td>$/, '');
+          const box = edit ? `<label style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;"><input type="checkbox" class="certif-histo" data-nom="${safe}"${histo ? ' checked' : ''}> Certifié avant la création du site</label>` : '';
+          return base + box + '</td>';
+        })()}
         ${edit ? `<td><button type="button" class="certif-delete-btn" data-nom="${safe}" title="Retirer du suivi" style="border:none;background:none;color:var(--red);cursor:pointer;">🗑️</button></td>` : ''}
       </tr>`;
     }).join('');
@@ -5988,6 +5998,14 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       const sauver = () => certifSauver(inp.dataset.nom, {[inp.dataset.champ]: inp.value}, inp);
       if(inp.type === 'date') armerSaisieDate(inp, sauver);
       else inp.addEventListener('change', sauver);
+    });
+    certifTableWrap.querySelectorAll('.certif-histo').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const nom = cb.dataset.nom, rec = certifRecords.find(r => r.nom === nom);
+        const aDate = rec && rec.certifie && !certifHisto(rec.certifie);
+        if(cb.checked && aDate && !window.confirm('Une date de certification (' + certifDateLibelle(rec.certifie) + ') est déjà saisie pour ' + displayName(nom) + '.\n\nElle sera remplacée par « avant la création du site ». Continuer ?')){ cb.checked = false; return; }
+        certifSauver(nom, {certifie: cb.checked ? CERTIF_HISTO : ''}, cb);
+      });
     });
     certifTableWrap.querySelectorAll('.certif-delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
