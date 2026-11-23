@@ -315,6 +315,9 @@
   .certif-kpis{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
   .certif-kpi{padding:8px 14px; background:#faf9f4; border:1px solid var(--line); border-radius:10px; font-size:12px; color:var(--ink-soft);}
   .certif-kpi b{display:block; font-size:20px; color:var(--navy-2);}
+  .certif-kpi.evo{background:linear-gradient(135deg,#e6f3f3,#f4faf9); border:2px solid var(--teal); box-shadow:0 2px 8px rgba(47,114,118,.18); padding:10px 18px; font-weight:700; color:var(--teal);}
+  .certif-kpi.evo b{font-size:28px; color:var(--teal);}
+  .certif-kpi.evo::before{content:'🚀 Évolution interne'; display:block; font-size:10px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:2px;}
   #certifTableWrap table.matrix-table thead th{text-align:center; vertical-align:middle;}
   #certifTableWrap table.matrix-table td{text-align:center; vertical-align:middle;}
   .certif-input{text-align:center;}
@@ -1702,20 +1705,20 @@
   <div class="panel-block" id="rzTab">
     <div class="panel-head">
       <h3>🧭 Certification des responsables de zone</h3>
-      <p>Suivi de la certification de chaque RZ : <b>période probatoire</b> (2 certifications, avec la moyenne des %) puis <b>en poste</b> (deux certifications non annoncées par semestre, avec la prime). Le bouton « 📝 Grille » ouvre la grille d'évaluation : le % est calculé tout seul et reporté dans le suivi. Une fois la grille remplie, « 👁️ Consulter » la rouvre et permet de l'exporter en PDF pour la transmettre au RZ.</p>
+      <p>Suivi de la certification de chaque RZ : <b>période probatoire</b> (2 certifications, avec la moyenne des %). Le bouton « 📝 Grille » ouvre la grille d'évaluation : le % est calculé tout seul et reporté dans le suivi. Une fois la grille remplie, « 👁️ Consulter » la rouvre et permet de l'exporter en PDF pour la transmettre au RZ.</p>
     </div>
     <div id="rzSummary"></div>
     <form id="rzAddForm" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
       <label for="rzAddInput" style="font-size:12px; font-weight:700; color:var(--ink-soft);">Ajouter un RZ au suivi :</label>
       <input type="text" id="rzAddInput" placeholder="Prénom NOM" autocomplete="off" style="font:inherit; font-size:13px; padding:7px 10px; border:1px solid var(--line); border-radius:8px; min-width:220px;">
-      <select id="rzAddType" style="font:inherit; font-size:13px; padding:7px 10px; border:1px solid var(--line); border-radius:8px;"><option value="probatoire">Période probatoire</option><option value="en_poste">En poste</option></select>
+      <select id="rzAddType" style="display:none;"><option value="probatoire">Période probatoire</option></select>
       <button type="submit" class="restriction-toggle-btn" style="margin-bottom:0;">➕ Ajouter</button>
     </form>
-    <div class="rz-gridtools"><span class="certif-sub" style="display:inline;margin:0;">Grilles d'évaluation :</span><button type="button" class="rz-grid-btn" id="rzEditProb">⚙️ Modifier la grille probatoire</button><button type="button" class="rz-grid-btn" id="rzEditPoste">⚙️ Modifier la grille en poste</button></div>
+    <div class="rz-gridtools"><span class="certif-sub" style="display:inline;margin:0;">Grilles d'évaluation :</span><button type="button" class="rz-grid-btn" id="rzEditProb">⚙️ Modifier la grille probatoire</button><button type="button" class="rz-grid-btn" id="rzEditPoste" style="display:none;">⚙️ Modifier la grille en poste</button></div>
     <h4 class="rz-block-title">Suivi des certifications <span id="rzPlanCount"></span></h4>
     <div id="rzPlanBar" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:8px;"></div>
-    <h4 class="rz-block-title">RZ certifiés — en poste, certification non annoncée <span id="rzPosteCount"></span></h4>
-    <div id="rzWrapPoste"></div>
+    <h4 class="rz-block-title" style="display:none;">RZ certifiés — en poste <span id="rzPosteCount"></span></h4>
+    <div id="rzWrapPoste" style="display:none;"></div>
     <h4 class="rz-block-title">RZ en période probatoire <span id="rzProbCount"></span></h4>
     <div id="rzWrapProb"></div>
   </div>
@@ -2915,20 +2918,19 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
             ])
             + tip('Comme le reste du site, seules l\'année en cours et l\'année précédente sont conservées : une fiche dont toutes les dates sont plus anciennes est supprimée automatiquement. Les actions sont notées dans le journal d\'activité, sous « Certification formateurs ».'));
 
-      if(accesCertifRZ) section('certification-rz', '🧭', 'var(--teal)', 'Certification RZ', 'Suivi des responsables de zone : probatoire et en poste',
+      if(accesCertifRZ) section('certification-rz', '🧭', 'var(--teal)', 'Certification RZ', 'Suivi des responsables de zone en période probatoire',
           para('Le suivi de la certification de chaque responsable de zone (RZ). Le menu <strong>Certification</strong> se déroule au clic et propose « Certification formateurs » et « Certification RZ ».')
-            + sub('Deux situations')
+            + sub('Ce que contient l\'onglet')
             + list([
               '<strong>Période probatoire</strong> : 2 certifications (date + % obtenu). La <strong>moyenne</strong> des % est calculée automatiquement ; elle passe au vert à partir de 80 %.',
-              '<strong>En poste</strong> : deux certifications non annoncées par semestre (date, %, évaluateur). La <strong>prime</strong> se calcule selon le % : 80 % = 100 €, 85 % = 125 €, 90 % = 150 €, 95 % = 175 €, 98 % et plus = 200 €.',
             ])
             + sub('Utiliser l\'onglet')
             + steps([
-              'Tape le nom du RZ, choisis « Période probatoire » ou « En poste », puis clique <strong>➕ Ajouter</strong>.',
+              'Tape le nom du RZ, puis clique <strong>➕ Ajouter</strong>.',
               'Renseigne les dates (période probatoire, vu par le superviseur, prêt à être certifié, dates de certification) : elles s\'enregistrent dès que tu les choisis.',
-              'Clique <strong>📝 Grille</strong> sur une certification : réponds ligne par ligne (Validé / En cours / Non acquis / Non évalué en probatoire ; OUI / NON / SO en poste). Le % de chaque rubrique et le résultat se calculent tout seuls.',
+              'Clique <strong>📝 Grille</strong> sur une certification : réponds ligne par ligne (Validé / En cours / Non acquis / Non évalué). Le % de chaque rubrique et le résultat se calculent tout seuls.',
               'Clique <strong>Enregistrer</strong> : la date, le % et l\'évaluateur sont reportés dans le suivi. Tu peux rouvrir la grille plus tard pour la corriger.',
-              'Le menu « Statut » d\'une ligne fait passer un RZ de « Probatoire » à « En poste » une fois certifié. Le <strong>🗑️</strong> retire un RZ du suivi.',
+              'Le menu « Statut » d\'une ligne fait passer un RZ de « Probatoire » à « En poste » une fois certifié : il quitte alors ce tableau et est compté dans « RZ passés en poste ». Le <strong>🗑️</strong> retire un RZ du suivi.',
             ])
             + tip('Comme le reste du site, seules l\'année en cours et l\'année précédente sont conservées. Les RZ, les Managers et les formateurs n\'ont pas accès à cet onglet.'));
 
@@ -5922,10 +5924,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     if(!certifRecords.length){ certifSummary.innerHTML = ''; return; }
     certifSummary.innerHTML = `<div class="certif-kpis">
       <div class="certif-kpi"><b>${certifRecords.length}</b>formateur${certifRecords.length > 1 ? 's' : ''} suivi${certifRecords.length > 1 ? 's' : ''}</div>
-      <div class="certif-kpi"><b style="color:var(--green);">${n('green')}</b>certifié${n('green') > 1 ? 's' : ''}</div>
-      <div class="certif-kpi"><b style="color:var(--amber-dark);">${n('amber')}</b>en cours</div>
-      <div class="certif-kpi"><b style="color:var(--plum);">${n('plum')}</b>prêt${n('plum') > 1 ? 's' : ''} pour la certification</div>
-      ${(() => { const Y = new Date().getFullYear(); const nb = y => certifRecords.filter(r => r.certifie && certifPassee(r.certifie) && String(r.certifie).slice(0, 4) === String(y)).length; return `<div class="certif-kpi" title="Formateurs devenus certifiés dans l'année (date de certification dans l'année)"><b style="color:var(--teal);">${nb(Y)}</b>formateur${nb(Y) > 1 ? 's' : ''} certifié${nb(Y) > 1 ? 's' : ''} en ${Y}<span class="certif-sub" style="display:block;">${Y - 1} : ${nb(Y - 1)}</span></div>`; })()}
+      ${(() => { const Y = new Date().getFullYear(); const nb = y => certifRecords.filter(r => r.certifie && certifPassee(r.certifie) && String(r.certifie).slice(0, 4) === String(y)).length; return `<div class="certif-kpi evo" title="Formateurs devenus certifiés dans l'année (date de certification dans l'année)"><b style="color:var(--teal);">${nb(Y)}</b>formateur${nb(Y) > 1 ? 's' : ''} certifié${nb(Y) > 1 ? 's' : ''} en ${Y}<span class="certif-sub" style="display:block;">${Y - 1} : ${nb(Y - 1)}</span></div>`; })()}
     </div>`;
   }
 
@@ -6116,11 +6115,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const nProb = rzRecords.filter(r => r.type === 'probatoire').length;
     const nPoste = rzRecords.length - nProb;
     rzSummary.innerHTML = `<div class="certif-kpis">
-      <div class="certif-kpi"><b>${rzRecords.length}</b>RZ suivi${rzRecords.length > 1 ? 's' : ''}</div>
-      <div class="certif-kpi"><b style="color:var(--amber-dark);">${nProb}</b>en période probatoire</div>
-      <div class="certif-kpi"><b style="color:var(--green);">${nPoste}</b>en poste</div>
-      ${(() => { const Y = new Date().getFullYear(); const nb = y => rzRecords.filter(r => r.type === 'en_poste' && String([r.c1Date, r.c2Date, r.c3Date].filter(Boolean).sort().pop() || '').slice(0, 4) === String(y)).length; return `<div class="certif-kpi" title="RZ passés « En poste » dans l'année (dernière certification probatoire datée dans l'année)"><b style="color:var(--teal);">${nb(Y)}</b>RZ passé${nb(Y) > 1 ? 's' : ''} en poste en ${Y}<span class="certif-sub" style="display:block;">${Y - 1} : ${nb(Y - 1)}</span></div>`; })()}
-      ${nPoste ? (() => { let t1 = 0, t2 = 0, prov = 0; rzRecords.filter(r => r.type !== 'probatoire').forEach(r => { const a = rzSem(r, 's1', 's3'), b = rzSem(r, 's2', 's4'); if(a){ t1 += a.prime; if(a.n < 2) prov++; } if(b){ t2 += b.prime; if(b.n < 2) prov++; } }); return `<div class="certif-kpi" data-tip="Somme des primes de tous les RZ en poste : moyenne des 2 certifications de chaque semestre, puis barème"><b style="color:var(--navy);">${t1 + t2} €</b>total des primes<span class="certif-sub" style="display:block;">1er sem. ${t1} € · 2e sem. ${t2} €${prov ? ' · dont ' + prov + ' provisoire' + (prov > 1 ? 's' : '') : ''}</span></div>`; })() : ''}
+      ${(() => { const Y = new Date().getFullYear(); const nb = y => rzRecords.filter(r => r.type === 'en_poste' && String([r.c1Date, r.c2Date, r.c3Date].filter(Boolean).sort().pop() || '').slice(0, 4) === String(y)).length; return `<div class="certif-kpi evo" title="RZ passés « En poste » dans l'année (dernière certification probatoire datée dans l'année)"><b style="color:var(--teal);">${nb(Y)}</b>RZ passé${nb(Y) > 1 ? 's' : ''} en poste en ${Y}<span class="certif-sub" style="display:block;">${Y - 1} : ${nb(Y - 1)}</span></div>`; })()}
     </div>`;
   }
 
@@ -6191,13 +6186,13 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     return lignes;
   }
   function rzRenderPlan(){
-    const all = rzPlanLignes();
+    const all = rzPlanLignes().filter(l => !l.poste);
     const cnt = k => all.filter(l => l.statut === k).length;
     document.getElementById('rzPlanCount').textContent = all.length ? '(' + cnt('retard') + ' en retard · ' + cnt('aplanifier') + ' à planifier · ' + cnt('planifie') + ' planifiée' + (cnt('planifie') > 1 ? 's' : '') + ' · ' + cnt('fait') + ' réalisée' + (cnt('fait') > 1 ? 's' : '') + ')' : '';
     document.getElementById('rzPlanBar').innerHTML = `<label style="font-size:12px;font-weight:700;color:var(--ink-soft);">Afficher :
       <select id="rzPlanFilter" style="font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;">
         <option value="todo"${rzPlanFilter === 'todo' ? ' selected' : ''}>Reste à faire</option><option value="done"${rzPlanFilter === 'done' ? ' selected' : ''}>Déjà réalisées</option><option value="all"${rzPlanFilter === 'all' ? ' selected' : ''}>Tout</option></select></label>
-      <span class="certif-sub" style="display:inline;">Échéances en poste : 30 juin (1er semestre) et 31 décembre (2e semestre). En période probatoire : fin de la période.</span>`;
+      <span class="certif-sub" style="display:inline;">Échéance : fin de la période probatoire.</span>`;
     const pill = { retard:['red','En retard'], aplanifier:['amber','À planifier'], planifie:['gray','Planifiée'], fait:['green','Réalisée'] };
     const filtre = l => rzPlanFilter === 'all' || (rzPlanFilter === 'done' ? l.fait : !l.fait);
     const vide = poste => '<p style="color:var(--ink-soft);font-size:13px;">' + (rzRecords.some(r => (r.type === 'probatoire') !== poste) ? 'Rien à afficher avec ce filtre.' : (poste ? 'Aucun RZ en poste.' : 'Aucun RZ en période probatoire.')) + '</p>';
