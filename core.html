@@ -316,10 +316,13 @@
   .certif-kpi{padding:8px 14px; background:#faf9f4; border:1px solid var(--line); border-radius:10px; font-size:12px; color:var(--ink-soft);}
   .certif-kpi b{display:block; font-size:20px; color:var(--navy-2);}
   .fm-schema{width:100%; table-layout:fixed; border-collapse:collapse; text-align:center;}
-  .fm-schema th, .fm-schema td{padding:6px 2px; font-size:12px; word-break:normal; overflow-wrap:anywhere;}
-  .fm-schema th{font-size:11px; padding:6px 0; overflow-wrap:normal;}
-  .fm-schema th:first-child, .fm-schema td:first-child{width:26%; text-align:left; padding-left:6px;}
-  .fm-schema .action-pill{padding:2px 6px; font-size:11px; white-space:nowrap;}
+  .fm-schema th, .fm-schema td{padding:6px 1px; font-size:12px; word-break:normal; overflow-wrap:anywhere;}
+  .fm-schema th{font-size:10.5px; padding:6px 0; overflow-wrap:normal; text-align:center; letter-spacing:0; text-transform:none; font-size:11px;}
+  .fm-schema th:first-child{text-align:left;}
+  .fm-schema th:first-child, .fm-schema td:first-child{width:25%; text-align:left; padding-left:6px;}
+  .fm-schema .action-pill{display:block; width:100%; max-width:34px; margin:0 auto; padding:2px 0; font-size:11px; white-space:nowrap; text-align:center; box-sizing:border-box;}
+  .fm-schema tbody tr:nth-child(6n+1) td, .fm-schema tbody tr:nth-child(6n+1) td{border-top:2px solid var(--line);}
+  .fm-schema td{border-bottom:1px solid var(--line);}
   .rz-save-btn{display:block; margin:4px auto 0; font:inherit; font-size:12px; font-weight:700; padding:5px 10px; border:none; border-radius:8px; background:var(--teal); color:#fff; cursor:pointer;}
   .rz-save-btn:hover{filter:brightness(1.1);}
   .rz-dirty{outline:2px solid var(--amber) !important; background:#fff6e0 !important;}
@@ -6637,10 +6640,9 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   function fmTrimNA(rec, per){
     const cd = String(rec.certifie || '').slice(0, 10), e = fmEvalDe(rec.nom, per);
     if(!cd || (e && e.date)) return false;
-    // On laisse la possibilité d'évaluer le dernier trimestre terminé avant la certification (et le bilan de juillet) :
-    // un trimestre n'est écarté que si la certification date d'après la fin du trimestre SUIVANT.
-    const suiv = { t1: 't2', t2: 't3', t3: 't4' }[per];
-    const fin = suiv ? fmAnnee + '-' + String(FM_ECH[suiv][0]).padStart(2, '0') + '-' + String(FM_ECH[suiv][1]).padStart(2, '0') : (Number(fmAnnee) + 1) + '-03-31';
+    // Seul le trimestre en cours à la date de certification, et les suivants, sont dus : un trimestre est écarté
+    // si la certification date d'après SA fin (T1 : 31/03, T2 : 30/06, T3 : 30/09, T4 : 31/12).
+    const fin = fmAnnee + '-' + String(FM_ECH[per][0]).padStart(2, '0') + '-' + String(FM_ECH[per][1]).padStart(2, '0');
     return cd > fin;
   }
   function fmNA(rec, per){
@@ -6701,14 +6703,18 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         <span class="certif-sub" style="display:inline;">${fmLegend(form)}</span></div>
       <details style="margin:0 0 10px;"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--teal);">ℹ️ Quelles évaluations sont dues selon la date de certification ?</summary>
         <div class="matrix-wrap" style="margin-top:8px;"><table class="fm-schema">
-          <thead><tr><th>Situation</th><th>T1</th><th>T2</th><th>Bilan</th><th>T3</th><th>T4</th><th>Annuel</th></tr></thead>
+          <thead><tr><th>Certifié en</th><th>T1</th><th>T2</th><th>Bilan</th><th>T3</th><th>T4</th><th>Annuel</th></tr></thead>
           <tbody>
-            <tr><td>Certifié avant fin juin</td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td></tr>
-            <tr><td>Certifié mi-juillet</td><td><span class="action-pill gray">non</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td></tr>
-            <tr><td>Certifié mi-octobre</td><td><span class="action-pill gray">non</span></td><td><span class="action-pill gray">non</span></td><td><span class="action-pill gray">non</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td><td><span class="action-pill green">dû</span></td></tr>
-            <tr><td>Pas encore certifié</td><td colspan="6"><span class="action-pill gray">absent du tableau</span></td></tr>
+            ${['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'].map((nom, i) => {
+              const md = String(i + 1).padStart(2, '0') + '-15';
+              const na = per => md > String(FM_ECH[per][0]).padStart(2, '0') + '-' + String(FM_ECH[per][1]).padStart(2, '0');
+              const nas = { t1: na('t1'), t2: na('t2'), t3: na('t3'), t4: na('t4') };
+              nas.bilan = nas.t1 && nas.t2; nas.annuel = false;
+              return '<tr><td>' + nom + '</td>' + ['t1', 't2', 'bilan', 't3', 't4', 'annuel'].map(k => '<td><span class="action-pill ' + (nas[k] ? 'gray">non' : 'green">dû') + '</span></td>').join('') + '</tr>';
+            }).join('')}
+            <tr><td>Pas encore certifié</td><td colspan="6"><span class="action-pill gray" style="width:auto;max-width:none;display:inline-block;padding:2px 10px;">absent du tableau</span></td></tr>
           </tbody></table></div>
-        <p class="certif-sub" style="margin:6px 0 0;">« non » = évaluation écartée. Un trimestre est écarté si le formateur a été certifié après la fin du trimestre suivant : le dernier trimestre terminé avant la certification reste dû. Le bilan de juillet reste tant que T1 ou T2 est dû ; l'évaluation annuelle, tant qu'un trimestre est dû.</p></details>
+        <p class="certif-sub" style="margin:6px 0 0;">« non » = évaluation écartée. Seul le trimestre en cours à la date de certification, et les suivants, sont dus. Le bilan de juillet reste dû tant que T1 ou T2 est dû ; l'évaluation annuelle, tant qu'un trimestre est dû.</p></details>
       ${!certifRecords.length ? '<p style="color:var(--ink-soft);font-size:13px;">Ajoute un formateur au suivi pour commencer ses évaluations.</p>' : (!lignes.length ? '<p style="color:var(--ink-soft);font-size:13px;">Rien à afficher avec ce filtre.</p>' : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
         <th>Formateur</th><th>Évaluation</th><th data-tip="Date limite indicative pour réaliser l'évaluation">Échéance</th><th data-tip="Date à laquelle tu prévois de faire l'évaluation">Date prévue</th><th>Statut</th><th>Résultat</th><th data-tip="Prime annuelle : palier atteint puis prorata des heures travaillées">Prime annuelle</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`)}`;
     document.getElementById('fmFilter').addEventListener('change', e => { fmFilter = e.target.value; fmRender(); });
