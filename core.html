@@ -2925,7 +2925,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
             + sub('Utiliser l\'onglet')
             + steps([
               'Tape le nom du RZ, choisis « Période probatoire » ou « En poste », puis clique <strong>➕ Ajouter</strong>.',
-              'Renseigne les dates (période probatoire, vu par le superviseur, dates de certification) : elles s\'enregistrent dès que tu les choisis.',
+              'Renseigne les dates (période probatoire, vu par le superviseur, prêt à être certifié, dates de certification) : elles s\'enregistrent dès que tu les choisis.',
               'Clique <strong>📝 Grille</strong> sur une certification : réponds ligne par ligne (Validé / En cours / Non acquis / Non évalué en probatoire ; OUI / NON / SO en poste). Le % de chaque rubrique et le résultat se calculent tout seuls.',
               'Clique <strong>Enregistrer</strong> : la date, le % et l\'évaluateur sont reportés dans le suivi. Tu peux rouvrir la grille plus tard pour la corriger.',
               'Le menu « Statut » d\'une ligne fait passer un RZ de « Probatoire » à « En poste » une fois certifié. Le <strong>🗑️</strong> retire un RZ du suivi.',
@@ -5925,6 +5925,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       <div class="certif-kpi"><b style="color:var(--green);">${n('green')}</b>certifié${n('green') > 1 ? 's' : ''}</div>
       <div class="certif-kpi"><b style="color:var(--amber-dark);">${n('amber')}</b>en cours</div>
       <div class="certif-kpi"><b style="color:var(--plum);">${n('plum')}</b>prêt${n('plum') > 1 ? 's' : ''} pour la certification</div>
+      ${(() => { const Y = new Date().getFullYear(); const nb = y => certifRecords.filter(r => r.certifie && certifPassee(r.certifie) && String(r.certifie).slice(0, 4) === String(y)).length; return `<div class="certif-kpi" title="Formateurs devenus certifiés dans l'année (date de certification dans l'année)"><b style="color:var(--teal);">${nb(Y)}</b>formateur${nb(Y) > 1 ? 's' : ''} certifié${nb(Y) > 1 ? 's' : ''} en ${Y}<span class="certif-sub" style="display:block;">${Y - 1} : ${nb(Y - 1)}</span></div>`; })()}
     </div>`;
   }
 
@@ -6118,6 +6119,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       <div class="certif-kpi"><b>${rzRecords.length}</b>RZ suivi${rzRecords.length > 1 ? 's' : ''}</div>
       <div class="certif-kpi"><b style="color:var(--amber-dark);">${nProb}</b>en période probatoire</div>
       <div class="certif-kpi"><b style="color:var(--green);">${nPoste}</b>en poste</div>
+      ${(() => { const Y = new Date().getFullYear(); const nb = y => rzRecords.filter(r => r.type === 'en_poste' && String([r.c1Date, r.c2Date, r.c3Date].filter(Boolean).sort().pop() || '').slice(0, 4) === String(y)).length; return `<div class="certif-kpi" title="RZ passés « En poste » dans l'année (dernière certification probatoire datée dans l'année)"><b style="color:var(--teal);">${nb(Y)}</b>RZ passé${nb(Y) > 1 ? 's' : ''} en poste en ${Y}<span class="certif-sub" style="display:block;">${Y - 1} : ${nb(Y - 1)}</span></div>`; })()}
       ${nPoste ? (() => { let t1 = 0, t2 = 0, prov = 0; rzRecords.filter(r => r.type !== 'probatoire').forEach(r => { const a = rzSem(r, 's1', 's3'), b = rzSem(r, 's2', 's4'); if(a){ t1 += a.prime; if(a.n < 2) prov++; } if(b){ t2 += b.prime; if(b.n < 2) prov++; } }); return `<div class="certif-kpi" data-tip="Somme des primes de tous les RZ en poste : moyenne des 2 certifications de chaque semestre, puis barème"><b style="color:var(--navy);">${t1 + t2} €</b>total des primes<span class="certif-sub" style="display:block;">1er sem. ${t1} € · 2e sem. ${t2} €${prov ? ' · dont ' + prov + ' provisoire' + (prov > 1 ? 's' : '') : ''}</span></div>`; })() : ''}
     </div>`;
   }
@@ -6225,11 +6227,12 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const dt = (rec, ch, lab) => `<span class="certif-sub" style="display:inline;text-align:right;">${lab}</span><input type="date" class="certif-input rz-in" data-nom="${rzEsc(rec.nom)}" data-champ="${ch}" value="${rzEsc(rec[ch])}" title="${lab}" style="width:140px;">`;
     rzWrapProb.innerHTML = !lb.length ? vide(false) : `<div class="matrix-wrap"><table class="matrix-table"><thead><tr>
           <th>Responsable de zone</th><th data-tip="Dates de début et de fin de la période probatoire">Période probatoire</th>
-          <th data-tip="Date à laquelle le RZ a été vu par le superviseur">Vu par le superviseur</th><th>Certification</th>
+          <th data-tip="Date à laquelle le RZ a été vu par le superviseur">Vu par le superviseur</th><th data-tip="Date à laquelle le RZ est jugé prêt à être certifié">Prêt à être certifié</th><th>Certification</th>
           <th data-tip="Date à laquelle tu prévois de réaliser la certification">Date prévue</th><th>Statut</th><th>Résultat</th><th></th><th></th></tr></thead><tbody>
-          ${lb.map(l => { const m = rzStatutProb(l.rec).m; return `<tr class="${cls(l)}">${cNom(l, m === null ? '' : `<span class="certif-sub">Moyenne : ${rzFmtPct(m)}</span>`)}
+          ${lb.map(l => { const m = rzStatutProb(l.rec).m; return `<tr class="${cls(l)}">${cNom(l, (m === null ? '' : `<span class="certif-sub">Moyenne : ${rzFmtPct(m)}</span>`) + (l.rec.pret && !l.fait ? `<div style="margin-top:4px;"><span class="action-pill plum">🎯 Prêt à être certifié</span></div>` : ''))}
             <td><div style="display:grid;grid-template-columns:auto 140px;gap:4px 6px;align-items:center;justify-content:center;">${dt(l.rec, 'probDu', 'Du')}${dt(l.rec, 'probAu', 'Au')}</div></td>
             <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(l.rec.nom)}" data-champ="vu" value="${rzEsc(l.rec.vu)}"></td>
+            <td><input type="date" class="certif-input rz-in" data-nom="${rzEsc(l.rec.nom)}" data-champ="pret" value="${rzEsc(l.rec.pret || '')}"></td>
             <td>${rzEsc(RZ_SLOT_LABELS[l.slot])}</td>${cDate(l)}${cStatut(l)}${cRes(l)}${cBtns(l)}${rzDel(l.rec)}</tr>`; }).join('')}
           </tbody></table></div>`;
     const f = document.getElementById('rzPlanFilter');
