@@ -2101,7 +2101,8 @@ function ouvrirPageImpression(titre, sousTitre, corpsHtml){
     <h1>${esc(titre)}</h1>
     <p class="sub">${esc(sousTitre)}</p>
     ${corpsHtml}
-    </body></html>`);
+    
+</body></html>`);
   win.document.close();
   win.focus();
   setTimeout(() => win.print(), 300);
@@ -3907,6 +3908,44 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       return list.find(e => e.nom === nom);
     }
 
+    // Export Excel complet de l'onglet (une ligne par personne : Fait le / A faire avant le pour chaque formation).
+    (window.__xlsxDedies = window.__xlsxDedies || {})[cfg.sheetKey] = function(){
+      const NAVY = '1E2A3F';
+      const emps = list.filter(e => !currentRestaurant || e.restaurant === currentRestaurant).slice().sort((a, b) => (a.dateEntree || '9999').localeCompare(b.dateEntree || '9999'));
+      if(!emps.length) return null;
+      const fd = iso => { const d = parseDate(iso); return d ? frDate(d) : ''; };
+      const grp = ['Nom', "Date d'entrée", 'Ancienneté (mois)'], sub = ['', '', ''];
+      trainings.forEach(t => { const lab = t.label + (t.period && t.period !== 'ponctuel' ? ' (' + t.period + ')' : ''); grp.push(lab, lab); sub.push('Fait le', 'A faire avant le'); });
+      grp.push('Statut', 'Formations en retard'); sub.push('', '');
+      const couleurs = grp.map((x, i) => (i < 3 || i >= grp.length - 2) ? NAVY : null);
+      const nivLib = { red: 'En retard', orange: 'Sous 30 jours', green: 'À jour', gray: 'Non renseigné', done: 'À jour' };
+      const rows = emps.map(e => {
+        const l = [displayName(e.nom) + (e.enArret ? ' (arrêt)' : '') + (e.enConges ? ' (congés)' : ''), fd(e.dateEntree), e.ancienneteMois != null ? e.ancienneteMois : ''];
+        let nbRetard = 0;
+        trainings.forEach(t => {
+          const s = e.statuses[t.key];
+          l.push(fd(e[t.faitKey]));
+          const st = s.level === 'red' ? { fill: 'FBE5E5', color: 'C00000', b: 1 } : s.level === 'orange' ? { fill: 'FFF2DC', color: 'B7791F', b: 1 } : (s.level === 'green' || s.level === 'done') ? { fill: 'E8F1E8', color: '2E7D32', b: 0 } : { color: '888888', b: 0 };
+          if(s.level === 'red') nbRetard++;
+          l.push(Object.assign({ t: s.level === 'done' ? fd(e[t.faitKey]) : fd(e[t.butoirKey]) }, st, { h: 'right' }));
+        });
+        const lv = nivLib[e.worst] || '';
+        l.push({ t: lv, h: 'center', b: 1, fill: e.worst === 'red' ? 'FBE5E5' : e.worst === 'orange' ? 'FFF2DC' : 'E8F1E8', color: e.worst === 'red' ? 'C00000' : e.worst === 'orange' ? 'B7791F' : '2E7D32' }, nbRetard);
+        return l;
+      });
+      const sh1 = XLG.tableaux({ nomFeuille: cfg.nameColLabel.slice(0, 28), titre: cfg.nameColLabel + ' — ' + (currentRestaurant || 'Tous les restaurants') + ' — ' + frDate(new Date()), tables: [{ nbEntete: 2, couleurs, lignes: [grp, sub].concat(rows) }] });
+      // Synthèse par formation
+      const syn = [['Formation', 'Période', 'À jour', 'Sous 30 jours', 'En retard', 'Non renseigné', 'Taux à jour']];
+      trainings.forEach(t => {
+        const c = { green: 0, orange: 0, red: 0, gray: 0 };
+        emps.forEach(e => { const lv = e.statuses[t.key].level; c[lv === 'done' ? 'green' : lv]++; });
+        const tot = emps.length;
+        syn.push([t.label, t.period || '', c.green, c.orange, c.red, c.gray, tot ? Math.round(c.green / tot * 1000) / 10 + ' %' : '']);
+      });
+      const sh2 = XLG.tableaux({ nomFeuille: 'Synthèse', titre: 'Synthèse par formation — ' + (currentRestaurant || 'Tous les restaurants'), tables: [{ nbEntete: 1, figer: false, lignes: syn }] });
+      sh2.width(0, 44);
+      return [sh1, sh2];
+    };
     let trainingFocus = null; // null = toutes les formations confondues
     function relevantStatus(e){
       if(trainingFocus){
@@ -5264,6 +5303,29 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     `).join('');
   }
 
+  // Export Excel complet de la polyvalence (matrice équipiers x postes + taux par poste).
+  (window.__xlsxDedies = window.__xlsxDedies || {}).polyvalence = function(){
+    const NAVY = '1E2A3F', COUL = { production: '1E2A3F', service: '1E2A3F', autres: '1E2A3F' };
+    const emps = restaurantEmployees().slice().sort((a, b) => (a.dateEntree || '9999').localeCompare(b.dateEntree || '9999'));
+    if(!emps.length) return null;
+    const n = POSTES.length;
+    const tete = ['Équipier', "Date d'entrée"].concat(POSTES.map(p => p.short), ['Score', '% polyvalence']);
+    const couleurs = [NAVY, NAVY].concat(POSTES.map(p => COUL[p.group] || NAVY), [NAVY, NAVY]);
+    const rows = emps.map(e => [displayName(e.nom), e.dateEntree ? frDate(parseDate(e.dateEntree)) : ''].concat(POSTES.map((p, i) => e.skills[i] ? 'F' : ''), [e.polyScore, Math.round(e.polyPct * 1000) / 10 + ' %']));
+    const sh1 = XLG.tableaux({ nomFeuille: 'Polyvalence', titre: 'Matrice de polyvalence — ' + (currentRestaurant || 'Tous les restaurants') + ' — ' + frDate(new Date()) + '   (F = formé)',
+      tables: [{ nbEntete: 1, couleurs, lignes: [tete].concat(rows), formulesLigne: { c0: 2, c1: 1 + n, scoreCol: 2 + n, pctCol: 3 + n, marque: 'F' }, totaux: { c0: 2, c1: 1 + n, marque: 'F' } }] });
+    sh1.width(0, 30);
+    const P = x => Math.round(x * 1000) / 10 + ' %';
+    const kpi = [['Indicateur', 'Taux', 'Détail'],
+      ['Taux de polyvalence global (hors Autres)', P(globalPct), posteStats.filter(p => p.group !== 'autres').length + ' postes · ' + emps.length + ' équipiers']];
+    groupStats.forEach(g => kpi.push([g.label, P(g.pct), g.count + ' poste' + (g.count > 1 ? 's' : '')]));
+    const bars = [['Poste', 'Famille', 'Équipiers formés', 'Effectif', 'Taux de maîtrise']];
+    posteStats.slice().sort((a, b) => a.pct - b.pct).forEach(p => bars.push([p.label, GROUP_LABELS[p.group], p.trained, p.total, P(p.pct)]));
+    const sh2 = XLG.tableaux({ nomFeuille: 'Taux par poste', titre: 'Taux de maîtrise par poste — ' + (currentRestaurant || 'Tous les restaurants'), tables: [{ titre: 'Indicateurs', nbEntete: 1, figer: false, lignes: kpi }, { titre: 'Du poste le plus fragile au plus solide', nbEntete: 1, figer: false, lignes: bars }] });
+    sh2.width(0, 46).width(1, 18);
+    return [sh1, sh2];
+  };
+
   const polySearchInput = document.getElementById('polySearchInput');
   const polySortSelect = document.getElementById('polySortSelect');
   let matrixSortKey = null;
@@ -6471,7 +6533,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
       <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires<textarea id="rzGridComment" rows="3"${ro ? ' disabled' : ''} style="display:block;width:100%;margin-top:4px;font:inherit;font-size:13px;padding:8px;border:1px solid var(--line);border-radius:8px;">${rzEsc((ev && ev.commentaire) || '')}</textarea></label>
       <div class="rz-total" id="rzTotal"></div>
       <div class="modal-error" id="rzGridError" style="display:none;"></div>
-      <div class="modal-actions"><button type="button" id="rzGridCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="rzGridPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button>${ro ? '<button type="button" id="rzGridEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="rzGridSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
+      <div class="modal-actions"><button type="button" id="rzGridCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="rzGridPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button><button type="button" id="rzGridCsv" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">⬇️ Excel</button>${ro ? '<button type="button" id="rzGridEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="rzGridSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
     document.getElementById('rzGridTitle').textContent = 'Grille — ' + displayName(nom);
     rzGridModal.style.display = '';
     rzGridModal.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', () => { rzGrid.rep[r.dataset.k] = r.value; rzGridRefresh(); }));
@@ -6479,6 +6541,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     rzGridModal.querySelectorAll('.rz-line-com').forEach(i => i.addEventListener('input', () => { rzGrid.rep['c' + i.dataset.c] = i.value; }));
     document.getElementById('rzGridCancel').addEventListener('click', rzCloseGrid);
     document.getElementById('rzGridPdf').addEventListener('click', rzGridPdf);
+    document.getElementById('rzGridCsv').addEventListener('click', rzGridCsv);
     if(ro){ document.getElementById('rzGridEdit').addEventListener('click', () => rzOpenGrid(nom, slot, false)); }
     else { document.getElementById('rzGridSave').addEventListener('click', rzSaveGrid); }
     rzGridRefresh();
@@ -6492,6 +6555,24 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const prime = null; // la prime se calcule par semestre (moyenne des 2 certifications)
     document.getElementById('rzTotal').innerHTML = `<span>Résultat de la certification</span> <span class="action-pill ${rzCls(total)}" style="font-size:15px;">${rzFmtPct(total)}</span>${prime !== null ? ` <span>· Prime : <b>${prime} €</b></span>` : ''}
       <span class="certif-sub" style="display:inline;margin-left:8px;">Vert ≥ 80 % · orange 71–79 % · rouge ≤ 70 %</span>`;
+  }
+
+  // Export Excel de la grille affichée (mise en page de la grille Excel RZ, formules incluses).
+  function rzGridCsv(){
+    if(!rzGrid) return;
+    const secs = rzGrid.form.sections;
+    const { parSection, total } = rzCalc(rzGrid.kind, rzGrid.rep, rzGrid.form);
+    const lib = { V:'Validé', E:'En cours', N:'Non acquis', X:'Non évalué', OUI:'OUI', NON:'NON', SO:'SO' };
+    const map = rzGrid.kind === 'en_poste' ? { OUI:1, NON:0 } : { 'Validé':1, 'En cours':0.5, 'Non acquis':0 };
+    const val = id => ((document.getElementById(id) || {}).value || '').trim();
+    const fr = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (iso || ''); };
+    const sh = XLG.grille({
+      nomFeuille: 'Certification', map, th: [80, 71], coefs: secs.map(x => x.coef || 1), total,
+      infos: [['Certification', displayName(rzGrid.nom)], ['Type', RZ_SLOT_LABELS[rzGrid.slot]], ['Date', fr(val('rzGridDate'))], ['Évaluateur', val('rzGridPar')]],
+      sections: secs.map((x, si) => ({ titre: x.titre, coef: x.coef, com: rzGrid.rep['cs' + si] || '', lignes: x.lignes.map((l, li) => ({ t: l.t, c: l.c, v: lib[rzGrid.rep[si + '-' + li]] || '', com: rzGrid.rep['c' + si + '-' + li] || '' })) })),
+      zones: [['Commentaire général', val('rzGridComment'), 80]]
+    });
+    XL.download([sh], 'Certification_' + csvSlug(displayName(rzGrid.nom)) + '_' + (val('rzGridDate') || 'sans_date') + '.xlsx');
   }
 
   // Version imprimable / PDF de la grille (état affiché à l'écran) pour la transmettre au RZ.
@@ -6924,7 +7005,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         if(ec.length) body = '<p class="certif-sub" style="margin:0 0 10px;">ℹ️ Certifié le ' + certifDateLibelle(rc.certifie) + ' : ' + ec.join(', ') + ' ne concerne' + (ec.length > 1 ? 'nt' : '') + ' pas ce formateur en ' + fmAnnee + '.</p>' + body;
       } }
     body += `<div class="rz-total" id="fmTotal"></div><div class="modal-error" id="fmError" style="display:none;"></div>
-      <div class="modal-actions"><button type="button" id="fmCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="fmPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button>${ro ? '<button type="button" id="fmEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="fmSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
+      <div class="modal-actions"><button type="button" id="fmCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="fmPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button><button type="button" id="fmCsv" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">⬇️ Excel</button>${ro ? '<button type="button" id="fmEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="fmSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
     document.getElementById('rzGridContent').innerHTML = body;
     const M = rzGridModal;
     M.querySelectorAll('input[type=radio][data-k]').forEach(r => r.addEventListener('change', () => { rep[r.dataset.k] = r.value; fmRefresh(); }));
@@ -6936,6 +7017,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     [['fmSouhait', 'souhait'], ['fmEvoA', 'evoA'], ['fmEvoB', 'evoB']].forEach(([id, k]) => { const t = document.getElementById(id); if(t) t.addEventListener('input', () => { rep[k] = t.value; }); });
     document.getElementById('fmCancel').addEventListener('click', fmClose);
     document.getElementById('fmPdf').addEventListener('click', fmPdf);
+    document.getElementById('fmCsv').addEventListener('click', fmCsv);
     if(ro) document.getElementById('fmEdit').addEventListener('click', () => { g.ro = false; fmDraw(); });
     else document.getElementById('fmSave').addEventListener('click', fmSave);
     fmRefresh();
@@ -6995,6 +7077,70 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     if(d){ fmEvals = d.evaluations || fmEvals; fmClose(); fmRender(); } else btn.disabled = false;
   }
   // PDF : même habillage que la certification RZ.
+  // ---- Export Excel des grilles formateur et suivis ----
+  const csvSlug = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  const csvVal = id => ((document.getElementById(id) || {}).value || '').trim();
+
+  function fmCsv(){
+    const g = fmGrid; if(!g) return;
+    const per = g.per, form = g.form, rep = g.rep;
+    const lib = v => v === 'PARTIELLEMENT' ? 'PARTIEL' : (v || '');
+    const frd = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (iso || ''); };
+    const nom = 'Certification_formateur_' + csvSlug(displayName(g.nom)) + '_' + csvSlug(FM_LAB[per]) + '.xlsx';
+    const com = csvVal('fmCom');
+    let sh;
+    if(per.charAt(0) === 't'){
+      const r = fmCalc(rep, form);
+      sh = XLG.grille({
+        nomFeuille: FM_LAB[per].slice(0, 28), map: { OUI:1, PARTIEL:0.5, NON:0 }, th: [80, 50], totalMode: 'pts', total: r.total, totalLabel: 'MAÎTRISE DU POSTE',
+        infos: [['Formateur', displayName(g.nom)], ['Période', FM_LAB[per] + ' ' + fmAnnee], ['Date', frd(csvVal('fmDate'))], ['Évaluateur', csvVal('fmPar')]],
+        sections: form.sections.map((x, si) => ({ titre: x.titre, com: rep['cs' + si] || '', lignes: x.lignes.map((l, li) => ({ t: l.t, c: l.c, v: lib(rep[si + '-' + li]), com: rep['c' + si + '-' + li] || '' })) })),
+        zones: [['Commentaires', com, 80]]
+      });
+    } else if(per === 'bilan'){
+      const c = fmCumul(g.nom, ['t1', 't2']);
+      const L = [['Rubrique', 'Critère', 'Niveau de maîtrise', 'Actions à mener']];
+      form.sections.forEach((s, si) => s.lignes.forEach((l, li) => { const x = c.lignes[s.titre + '||' + l.t]; L.push([s.titre, l.t, x && x.b ? Math.round(x.p / x.b * 1000) / 10 + ' %' : '', rep['am' + si + '-' + li] || '']); }));
+      L.push(['Total des actions maîtrisées', '', c.pct === null || c.pct === undefined ? '' : Math.round(c.pct * 10) / 10 + ' %', '']);
+      sh = XLG.tableaux({ nomFeuille: 'Bilan', titre: 'Bilan semestriel — ' + displayName(g.nom) + ' — ' + frd(csvVal('fmDate')), tables: [{ nbEntete: 1, figer: false, lignes: L }] });
+    } else {
+      const sy = fmSyntheseAnnuelle();
+      const T = [];
+      const A = [['I – Bilan annuel des critères de performance', 'Niveau de maîtrise']];
+      form.sections.forEach(x => { const a = sy.c.axes[x.titre]; A.push([x.titre, a && a.b ? Math.round(a.p / a.b * 1000) / 10 + ' %' : '']); });
+      T.push({ nbEntete: 1, figer: false, lignes: A });
+      const O = [["II – Objectifs pour l'année suivante", '']];
+      form.sections.forEach((x, si) => O.push([x.titre, rep['ob' + si] || '']));
+      O.push(['Souhait du formateur visant à soutenir son développement personnel', rep.souhait || '']);
+      T.push({ nbEntete: 1, figer: false, lignes: O });
+      const P = [['III – Appréciation générale', 'Évaluation']];
+      FM_APPRECIATION.forEach((t, i) => P.push([t, lib(rep['ap' + i])]));
+      T.push({ nbEntete: 1, figer: false, lignes: P });
+      T.push({ nbEntete: 1, figer: false, lignes: [['IV – Évolution professionnelle et / ou mobilité', ''], ['A – Souhaits du collaborateur', rep.evoA || ''], ['B – Avis de la hiérarchie et échéance', rep.evoB || '']] });
+      T.push({ nbEntete: 1, figer: false, lignes: [['Synthèse', ''], ['Note obtenue', Math.round(sy.c.pct * 10) / 10 + ' %'], ['Palier', sy.pr.palier ? sy.pr.palier.nom : 'aucun'], ['Heures travaillées', String(sy.heures)], ['Prime', sy.pr.montant === null ? '—' : fmEur(sy.pr.montant)]] });
+      if(com) T.push({ nbEntete: 1, figer: false, lignes: [['Commentaires', ''], [com, '']] });
+      sh = XLG.tableaux({ nomFeuille: 'Annuel', titre: 'Entretien annuel ' + fmAnnee + ' — ' + displayName(g.nom) + ' — ' + frd(csvVal('fmDate')), tables: T });
+      sh.width(0, 60).width(1, 40);
+    }
+    XL.download([sh], nom);
+  }
+
+  function suCsv(){
+    const g = suGrid; if(!g) return;
+    const form = g.form, rep = g.rep, p30 = g.type === 'j30', pre = p30 ? '30' : '60', qs = form[p30 ? 'q30' : 'q60'];
+    const emp = restaurantEmployees().find(e => e.nom === g.nom);
+    const lib = v => v === 'PARTIELLEMENT' ? 'PARTIEL' : (v || '');
+    const sh = XLG.suivi({
+      nomFeuille: SU_LAB[g.type].slice(0, 28), titre: SU_LAB[g.type].toUpperCase() + ' — ' + displayName(g.nom),
+      infos: [["Date d'entrée", emp && emp.dateEntree ? fmFr(emp.dateEntree.slice(0, 10)) : ''], ['Date du suivi', fmFr(csvVal('suDate'))], ['Réalisé par', csvVal('suPar')]],
+      sectionTitre: "Questions à l'équipier",
+      qs: qs.map((q, i) => ({ t: q.t, m: q.m, rep: lib(rep['a' + pre + '-' + i]), com: rep['c' + pre + '-' + i] || '' })),
+      criteres: p30 ? form.criteres.map((c, i) => ({ t: (i + 1) + '. ' + c, v: rep['k' + i] || '' })) : null,
+      criteresTitre: "Critères d'évaluation de la période d'essai", conclusion: rep.conclusion || '', commentaire: csvVal('suCom')
+    });
+    XL.download([sh], 'Suivi_' + csvSlug(displayName(g.nom)) + '_' + csvSlug(SU_LAB[g.type]) + '.xlsx');
+  }
+
   function fmPdf(){
     const g = fmGrid; if(!g) return;
     const per = g.per, form = g.form, rep = g.rep;
@@ -7281,7 +7427,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:10px;">Conclusion de la période d'essai (30 jours)<select id="suConclusion" style="display:block;width:100%;margin-top:4px;font:inherit;font-size:13px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;"${ro ? ' disabled' : ''}>${opt(rep.conclusion || '', form.conclusions, '—')}</select></label></div>` : ''}
       <label style="display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-top:12px;">Commentaires (${p30 ? '30' : '60'} jours)${fmTa('suCom', g.ev && g.ev.commentaire, '', ro, 3)}</label>
       <div class="modal-error" id="suError" style="display:none;"></div>
-      <div class="modal-actions"><button type="button" id="suCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="suPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button>${ro ? '<button type="button" id="suEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="suSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
+      <div class="modal-actions"><button type="button" id="suCancel" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);">${ro ? 'Fermer' : 'Annuler'}</button><button type="button" id="suPdf" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">📄 Exporter en PDF</button><button type="button" id="suCsv" style="background:transparent;border:1px solid var(--navy);color:var(--navy);">⬇️ Excel</button>${ro ? '<button type="button" id="suEdit" style="background:var(--navy);border:none;color:#fff;">✏️ Modifier</button>' : '<button type="button" id="suSave" style="background:var(--navy);border:none;color:#fff;">Enregistrer</button>'}</div>`;
     document.getElementById('rzGridContent').innerHTML = body;
     const M = rzGridModal;
     M.querySelectorAll('input[type=radio][data-a]').forEach(r => r.addEventListener('change', () => { rep['a' + r.dataset.a] = r.value; suRefresh(); }));
@@ -7290,6 +7436,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     const cc = document.getElementById('suConclusion'); if(cc) cc.addEventListener('change', () => { rep.conclusion = cc.value; });
     document.getElementById('suCancel').addEventListener('click', suClose);
     document.getElementById('suPdf').addEventListener('click', suPdf);
+    document.getElementById('suCsv').addEventListener('click', suCsv);
     if(ro) document.getElementById('suEdit').addEventListener('click', () => { g.ro = false; suDraw(); });
     else document.getElementById('suSave').addEventListener('click', suSave);
     suRefresh();
@@ -9709,6 +9856,526 @@ const APPS_SCRIPT_URL = '__APPS_SCRIPT_URL__';
 
 
 </script>
+
+
+<script>
+// Mini générateur .xlsx (sans dépendance) : styles, fusions, formules, listes déroulantes.
+const XL = (function(){
+  const enc = new TextEncoder();
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '');
+  const T = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; T[n] = c >>> 0; }
+  const crc = b => { let c = 0xFFFFFFFF; for(let i = 0; i < b.length; i++) c = T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function zip(files){
+    const parts = [], cen = []; let off = 0;
+    files.forEach(f => {
+      const nm = enc.encode(f.name), cr = crc(f.data), len = f.data.length;
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(12, 0x21, true);
+      lh.setUint32(14, cr, true); lh.setUint32(18, len, true); lh.setUint32(22, len, true); lh.setUint16(26, nm.length, true);
+      parts.push(new Uint8Array(lh.buffer), nm, f.data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(14, 0x21, true);
+      ch.setUint32(16, cr, true); ch.setUint32(20, len, true); ch.setUint32(24, len, true); ch.setUint16(28, nm.length, true); ch.setUint32(42, off, true);
+      cen.push(new Uint8Array(ch.buffer), nm);
+      off += 30 + nm.length + len;
+    });
+    const cdSize = cen.reduce((a, x) => a + x.length, 0);
+    const e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, cdSize, true); e.setUint32(16, off, true);
+    return parts.concat(cen, [new Uint8Array(e.buffer)]);
+  }
+  const col = n => { let s = ''; n++; while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+  const addr = (r, c) => col(c) + (r + 1);
+
+  // Registre de styles.
+  function Styles(){
+    const fonts = ['<font><sz val="11"/><name val="Calibri"/></font>'], fills = ['<fill><patternFill patternType="none"/></fill>', '<fill><patternFill patternType="gray125"/></fill>'];
+    const borders = ['<border><left/><right/><top/><bottom/><diagonal/></border>'], xfs = ['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'], fmts = [];
+    const idx = (arr, x) => { let i = arr.indexOf(x); if(i < 0){ arr.push(x); i = arr.length - 1; } return i; };
+    const cache = {};
+    function get(s){
+      if(!s) return 0;
+      const k = JSON.stringify(s); if(cache[k] !== undefined) return cache[k];
+      const font = idx(fonts, '<font>' + (s.b ? '<b/>' : '') + (s.i ? '<i/>' : '') + '<sz val="' + (s.sz || 11) + '"/><color rgb="FF' + (s.color || '000000') + '"/><name val="' + (s.font || 'Calibri') + '"/></font>');
+      const fill = s.fill ? idx(fills, '<fill><patternFill patternType="solid"><fgColor rgb="FF' + s.fill + '"/><bgColor indexed="64"/></patternFill></fill>') : 0;
+      const bs = s.border ? (s.border === 'medium' ? 'medium' : 'thin') : null;
+      const side = n => bs ? '<' + n + ' style="' + bs + '"><color rgb="FF' + (s.bcolor || '000000') + '"/></' + n + '>' : '<' + n + '/>';
+      const border = bs ? idx(borders, '<border>' + side('left') + side('right') + side('top') + side('bottom') + '<diagonal/></border>') : 0;
+      let nf = 0; if(s.nf){ let j = fmts.indexOf(s.nf); if(j < 0){ fmts.push(s.nf); j = fmts.length - 1; } nf = 164 + j; }
+      const al = (s.h || s.v || s.wrap) ? '<alignment' + (s.h ? ' horizontal="' + s.h + '"' : '') + ' vertical="' + (s.v || 'center') + '"' + (s.wrap ? ' wrapText="1"' : '') + '/>' : '';
+      xfs.push('<xf numFmtId="' + nf + '" fontId="' + font + '" fillId="' + fill + '" borderId="' + border + '" xfId="0"' + (nf ? ' applyNumberFormat="1"' : '') + ' applyFont="1" applyFill="1" applyBorder="1"' + (al ? ' applyAlignment="1">' + al + '</xf>' : '/>'));
+      return (cache[k] = xfs.length - 1);
+    }
+    function xml(){
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        + (fmts.length ? '<numFmts count="' + fmts.length + '">' + fmts.map((f, i) => '<numFmt numFmtId="' + (164 + i) + '" formatCode="' + esc(f) + '"/>').join('') + '</numFmts>' : '')
+        + '<fonts count="' + fonts.length + '">' + fonts.join('') + '</fonts><fills count="' + fills.length + '">' + fills.join('') + '</fills><borders count="' + borders.length + '">' + borders.join('') + '</borders>'
+        + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="' + xfs.length + '">' + xfs.join('') + '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    }
+    return { get, xml };
+  }
+
+  // Feuille : s.set(r, c, valeur|{v,f,s}, style). Lignes/colonnes à partir de 0.
+  function Sheet(name){
+    const cells = {}, merges = [], widths = {}, heights = {}, dvs = [];
+    let maxR = 0, maxC = 0, landscape = true, grid = false, freeze = 0;
+    const me = {
+      name,
+      set(r, c, v, s){ cells[r + ',' + c] = { v, s }; if(r > maxR) maxR = r; if(c > maxC) maxC = c; return me; },
+      style(r, c, s){ const k = r + ',' + c; if(!cells[k]) cells[k] = { v: null, s }; else cells[k].s = s; if(r > maxR) maxR = r; if(c > maxC) maxC = c; return me; },
+      merge(r1, c1, r2, c2){ merges.push(addr(r1, c1) + ':' + addr(r2, c2)); return me; },
+      width(c, w){ widths[c] = w; return me; },
+      height(r, h){ heights[r] = h; return me; },
+      list(r1, c1, r2, c2, opts){ dvs.push({ ref: addr(r1, c1) + ':' + addr(r2, c2), opts }); return me; },
+      portrait(){ landscape = false; return me; },
+      gridlines(b){ grid = b; return me; },
+      freezeRows(n){ freeze = n; return me; },
+      xml(st){
+        let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>'
+          + '<sheetViews><sheetView workbookViewId="0"' + (grid ? '' : ' showGridLines="0"') + '>' + (freeze ? '<pane ySplit="' + freeze + '" topLeftCell="A' + (freeze + 1) + '" activePane="bottomLeft" state="frozen"/>' : '') + '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>';
+        const wk = Object.keys(widths).map(Number).sort((a, b) => a - b);
+        if(wk.length) x += '<cols>' + wk.map(c => '<col min="' + (c + 1) + '" max="' + (c + 1) + '" width="' + widths[c] + '" customWidth="1"/>').join('') + '</cols>';
+        x += '<sheetData>';
+        for(let r = 0; r <= maxR; r++){
+          let row = '';
+          for(let c = 0; c <= maxC; c++){
+            const k = r + ',' + c, cell = cells[k]; if(!cell) continue;
+            let v = cell.v, f = null, sid = st.get(cell.s);
+            if(v && typeof v === 'object' && !(v instanceof Date)){ f = v.f; v = v.v; }
+            const a = addr(r, c), sa = sid ? ' s="' + sid + '"' : '';
+            if(f){
+              const fx = esc(String(f).replace(/^=/, ''));
+              if(typeof v === 'number' && isFinite(v)) row += '<c r="' + a + '"' + sa + '><f>' + fx + '</f><v>' + v + '</v></c>';
+              else row += '<c r="' + a + '"' + sa + ' t="str"><f>' + fx + '</f><v>' + esc(v == null ? '' : v) + '</v></c>';
+            } else if(typeof v === 'number' && isFinite(v)) row += '<c r="' + a + '"' + sa + '><v>' + v + '</v></c>';
+            else if(v === null || v === undefined || v === '') row += sid ? '<c r="' + a + '"' + sa + '/>' : '';
+            else row += '<c r="' + a + '"' + sa + ' t="inlineStr"><is><t xml:space="preserve">' + esc(v) + '</t></is></c>';
+          }
+          if(row || heights[r]) x += '<row r="' + (r + 1) + '"' + (heights[r] ? ' ht="' + heights[r] + '" customHeight="1"' : '') + '>' + row + '</row>';
+        }
+        x += '</sheetData>';
+        if(merges.length) x += '<mergeCells count="' + merges.length + '">' + merges.map(m => '<mergeCell ref="' + m + '"/>').join('') + '</mergeCells>';
+        if(dvs.length) x += '<dataValidations count="' + dvs.length + '">' + dvs.map(d => '<dataValidation type="list" allowBlank="1" showErrorMessage="0" sqref="' + d.ref + '"><formula1>"' + esc(d.opts.join(',')) + '"</formula1></dataValidation>').join('') + '</dataValidations>';
+        x += '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="' + (landscape ? 'landscape' : 'portrait') + '" fitToWidth="1" fitToHeight="0"/></worksheet>';
+        return x;
+      }
+    };
+    return me;
+  }
+
+  function build(sheets){
+    const st = Styles();
+    const sx = sheets.map(s => s.xml(st));
+    const files = [
+      ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' + sheets.map((s, i) => '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('') + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
+      ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+      ['xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' + sheets.map((s, i) => '<sheet name="' + esc(s.name.replace(/[\\\/\?\*\[\]:]/g, ' ').slice(0, 31)) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>').join('') + '</sheets><calcPr fullCalcOnLoad="1"/></workbook>'],
+      ['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + sheets.map((s, i) => '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>').join('') + '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+      ['xl/styles.xml', st.xml()]
+    ].map(f => ({ name: f[0], data: enc.encode(f[1]) }));
+    sx.forEach((x, i) => files.push({ name: 'xl/worksheets/sheet' + (i + 1) + '.xml', data: enc.encode(x) }));
+    return new Blob(zip(files), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  function download(sheets, filename){
+    const blob = build(sheets);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  return { Sheet, build, download, col, addr };
+})();
+if(typeof module !== 'undefined') module.exports = XL;
+
+</script>
+<script>
+// Mises en page Excel, calquées sur les fichiers d'origine (grille RZ, grille formateur, suivi 30/60 jours).
+const XLG = (function(){
+  const NAVYG = '1E2A3F', BLEU = '1E2A3F', BLEU_CLAIR = 'DCE6F2', VERT = 'C6EFCE', ORANGE = 'FFEB9C', ROUGE = 'FFC7CE', JAUNE = 'EEF2F8', JAUNE_VIF = '1E2A3F', ROUGE_VIF = '1E2A3F', ENTETE = '1E2A3F';
+  const F = 'Calibri';
+  const st = {
+    info: { b: 1, sz: 12, font: F, fill: BLEU_CLAIR, border: 1, v: 'center', wrap: 1 },
+    infoVal: { sz: 12, font: F, fill: BLEU_CLAIR, border: 1, v: 'center', wrap: 1 },
+    sec: { b: 1, sz: 12, font: F, color: 'FFFFFF', fill: BLEU, border: 1, v: 'center', wrap: 1 },
+    secC: { b: 1, sz: 11, font: F, color: 'FFFFFF', fill: BLEU, border: 1, h: 'center', v: 'center', wrap: 1 },
+    crit: { sz: 11, font: F, border: 1, v: 'center', wrap: 1 },
+    centre: { sz: 11, font: F, border: 1, h: 'center', v: 'center', wrap: 1 },
+    pts: { sz: 10, font: F, color: '555555', border: 1, h: 'center', v: 'center', nf: '0.##' },
+    pct: { b: 1, sz: 12, font: F, border: 1, h: 'center', v: 'center', nf: '0.0%' },
+    tot: { b: 1, sz: 13, font: F, color: 'FFFFFF', fill: BLEU, border: 'medium', v: 'center', wrap: 1 },
+    com: { sz: 11, font: F, border: 1, v: 'top', wrap: 1 },
+    label: { b: 1, sz: 11, font: F, v: 'center' },
+    th: { b: 1, sz: 11, font: F, color: 'FFFFFF', fill: ENTETE, border: 1, h: 'center', v: 'center', wrap: 1 },
+    td: { sz: 11, font: F, border: 1, v: 'center', wrap: 1 },
+    titre: { b: 1, sz: 13, font: F, color: 'FFFFFF', fill: BLEU, border: 1, v: 'center' },
+    banniere: { b: 1, sz: 16, font: F, color: 'FFFFFF', fill: ROUGE_VIF, h: 'center', v: 'center' },
+    jauneSec: { b: 1, sz: 12, font: F, color: 'FFFFFF', fill: JAUNE_VIF, border: 1, v: 'center' },
+    jauneIn: { sz: 11, font: F, fill: JAUNE, border: 1, v: 'top', wrap: 1 },
+    jauneInC: { sz: 11, font: F, fill: JAUNE, border: 1, h: 'center', v: 'center', wrap: 1 },
+    question: { b: 1, sz: 11, font: F, v: 'center', wrap: 1 }
+  };
+  const fill = (s, f) => Object.assign({}, s, { fill: f });
+  const couleurPct = (p, th) => p === null || p === undefined ? 'FFFFFF' : (p >= th[0] ? VERT : (p >= th[1] ? ORANGE : ROUGE));
+  const nombre = v => (typeof v === 'number' && isFinite(v)) ? v : null;
+  const lignesNb = t => Math.max(1, Math.ceil(String(t || '').length / 95));
+
+  // Bloc d'informations en haut (libellé | valeur), sur toute la largeur.
+  function infos(sh, r, lignes, c0, c1, lab){
+    lignes.forEach(l => {
+      sh.set(r, c0, l[0], st.info); sh.set(r, c0 + 1, l[1], st.infoVal);
+      for(let c = c0 + 2; c <= c1; c++) sh.style(r, c, st.infoVal);
+      sh.merge(r, c0 + 1, r, c1); sh.height(r, 22); r++;
+    });
+    return r;
+  }
+
+  // Grille d'évaluation : critères notés, points par formule, % par rubrique.
+  function grille(o){
+    const sh = XL.Sheet(o.nomFeuille || 'Grille').portrait();
+    sh.width(0, 2).width(1, 92).width(2, 17).width(3, 9).width(4, 9).width(5, 46).width(6, 2).width(7, 12);
+    let r = infos(sh, 0, o.infos || [], 1, 5);
+    r++;
+    const map = o.map, labels = Object.keys(map);
+    const th = o.th || [80, 71];
+    const secRows = [], dataFirst = r + 1;
+    let P = 0, B = 0; const pcts = [];
+    o.sections.forEach(s => {
+      const hr = r; secRows.push(hr);
+      sh.set(r, 1, s.titre + (s.coef && s.coef !== 1 ? ' (coef. ' + s.coef + ')' : ''), st.sec).set(r, 2, 'Évaluation', st.secC).set(r, 3, 'Barème', st.secC).set(r, 4, 'Points', st.secC).set(r, 5, 'Commentaire', st.secC);
+      sh.height(r, 24); r++;
+      const first = r; let p = 0, b = 0;
+      s.lignes.forEach(l => {
+        const R = r + 1, coef = nombre(l.c) === null ? 1 : l.c, f = map[l.v];
+        const nested = labels.map(k => 'IF(C' + R + '="' + k + '",D' + R + '*' + map[k] + ',').join('') + '""' + ')'.repeat(labels.length);
+        let val = '';
+        if(f !== undefined){ val = coef * f; p += val; b += coef; }
+        sh.set(r, 1, l.t, st.crit).set(r, 2, l.v || '', st.centre).set(r, 3, coef, st.centre).set(r, 4, { f: nested, v: val === '' ? '' : val }, st.pts).set(r, 5, l.com || '', st.com);
+        sh.height(r, Math.max(20, 16 * lignesNb(l.t) + 4));
+        r++;
+      });
+      const last = r - 1, FR = first + 1, LR = last + 1;
+      const base = labels.map(k => 'SUMIF(C' + FR + ':C' + LR + ',"' + k + '",D' + FR + ':D' + LR + ')').join('+');
+      const pc = b ? p / b : null; pcts.push(b ? p / b * 100 : null); P += p; B += b;
+      sh.set(hr, 7, { f: 'IFERROR(SUM(E' + FR + ':E' + LR + ')/(' + base + '),"")', v: pc === null ? '' : pc }, fill(st.pct, couleurPct(b ? pc * 100 : null, th)));
+      if(s.com){ sh.set(r, 1, 'Commentaire sur la rubrique : ' + s.com, st.com).style(r, 2, st.com).style(r, 3, st.com).style(r, 4, st.com).style(r, 5, st.com); sh.merge(r, 1, r, 5); sh.height(r, 20 + 16 * lignesNb(s.com)); r++; }
+      r++;
+    });
+    const dataLast = r - 2;
+    let total = o.total;
+    if(total === undefined || total === null) total = null;
+    let tf = null;
+    if(o.totalMode === 'pts'){
+      const a = dataFirst + 1, z = dataLast + 1;
+      tf = 'IFERROR(SUM(E' + a + ':E' + z + ')/(' + labels.map(k => 'SUMIF(C' + a + ':C' + z + ',"' + k + '",D' + a + ':D' + z + ')').join('+') + '),"")';
+      if(B) total = P / B * 100;
+    } else if(o.coefs && pcts.every(p => p !== null)){
+      tf = 'IFERROR((' + secRows.map((x, i) => 'H' + (x + 1) + '*' + o.coefs[i]).join('+') + ')/' + o.coefs.reduce((a, b) => a + b, 0) + ',"")';
+    }
+    sh.set(r, 1, o.totalLabel || 'SCORE TOTAL', st.tot);
+    const tv = total === null ? '' : total / 100;
+    sh.set(r, 2, tf ? { f: tf, v: tv } : tv, Object.assign({}, fill(st.pct, couleurPct(total, th)), { sz: 13, border: 'medium' }));
+    sh.height(r, 28); r++;
+    (o.extra || []).forEach(e => { sh.set(r, 1, e[0], st.info).set(r, 2, e[1], st.infoVal); sh.merge(r, 2, r, 5); sh.style(r, 3, st.infoVal).style(r, 4, st.infoVal).style(r, 5, st.infoVal); r++; });
+    r++;
+    (o.zones || []).forEach(z => {
+      sh.set(r, 1, z[0], st.label); r++;
+      sh.set(r, 1, z[1] || '', st.com); for(let c = 2; c <= 5; c++) sh.style(r, c, st.com);
+      sh.merge(r, 1, r, 5); sh.height(r, z[2] || 70); r += 2;
+    });
+    return sh;
+  }
+
+  // Blocs de tableaux empilés : titre, en-têtes colorés, lignes bordées.
+  function blocs(o){
+    const sh = XL.Sheet(o.nomFeuille || 'Export'); if(!o.paysage) sh.portrait();
+    let r = 0;
+    if(o.titre){ sh.set(r, 0, o.titre, { b: 1, sz: 14, font: F }); sh.height(r, 26); r += 2; }
+    if(o.infos){ r = infos(sh, r, o.infos, 0, Math.max(1, (o.largeur || 4) - 1)); r++; }
+    const maxLen = [];
+    o.blocs.forEach(b => {
+      if(b.titre){ sh.set(r, 0, b.titre, st.titre); for(let c = 1; c < b.tete.length; c++) sh.style(r, c, st.titre); if(b.tete.length > 1) sh.merge(r, 0, r, b.tete.length - 1); sh.height(r, 24); r++; }
+      b.tete.forEach((h, c) => { sh.set(r, c, h, st.th); maxLen[c] = Math.max(maxLen[c] || 6, String(h).length); });
+      sh.height(r, 30); r++;
+      b.lignes.forEach(l => {
+        l.forEach((v, c) => {
+          const estNb = typeof v === 'number';
+          sh.set(r, c, v, c === 0 ? st.td : Object.assign({}, st.td, { h: estNb ? 'center' : (String(v).length <= 14 ? 'center' : undefined) }));
+          maxLen[c] = Math.max(maxLen[c] || 6, Math.min(60, String(v == null ? '' : v).length));
+        });
+        r++;
+      });
+      r++;
+    });
+    maxLen.forEach((n, c) => sh.width(c, Math.max(10, Math.min(60, n + 3))));
+    if(o.widths) Object.keys(o.widths).forEach(c => sh.width(+c, o.widths[c]));
+    return sh;
+  }
+
+  // Suivi à 30 / 60 jours : bandeau rouge, sections jaunes, cases à compléter jaunes.
+  function suivi(o){
+    const sh = XL.Sheet(o.nomFeuille || 'Suivi').portrait();
+    sh.width(0, 2).width(1, 78).width(2, 20).width(3, 20).width(4, 20);
+    sh.set(0, 1, o.titre, st.banniere); for(let c = 2; c <= 4; c++) sh.style(0, c, st.banniere); sh.merge(0, 1, 0, 4); sh.height(0, 34);
+    let r = 2;
+    o.infos.forEach(l => {
+      sh.set(r, 1, l[0], { b: 1, sz: 11, font: F, border: 1, v: 'center' });
+      sh.set(r, 2, l[1], st.jauneIn); sh.style(r, 3, st.jauneIn); sh.style(r, 4, st.jauneIn); sh.merge(r, 2, r, 4); sh.height(r, 22); r++;
+    });
+    r++;
+    sh.set(r, 1, o.sectionTitre, st.jauneSec); for(let c = 2; c <= 4; c++) sh.style(r, c, st.jauneSec); sh.merge(r, 1, r, 4); sh.height(r, 24); r++;
+    o.qs.forEach(q => {
+      sh.set(r, 1, q.t, st.question); sh.height(r, 20 + 15 * lignesNb(q.t));
+      if(q.m){ sh.set(r, 2, q.rep || '', st.jauneInC); sh.list(r, 2, r, 2, ['OUI', 'PARTIEL', 'NON']); }
+      r++;
+      sh.set(r, 1, q.com || '', st.jauneIn); sh.style(r, 2, st.jauneIn); sh.style(r, 3, st.jauneIn); sh.style(r, 4, st.jauneIn); sh.merge(r, 1, r, 4); sh.height(r, 46); r += 2;
+    });
+    if(o.criteres){
+      sh.set(r, 1, o.criteresTitre, st.jauneSec); for(let c = 2; c <= 4; c++) sh.style(r, c, st.jauneSec); sh.merge(r, 1, r, 4); r++;
+      sh.set(r, 1, 'Critère', st.th).set(r, 2, 'Niveau', st.th); sh.style(r, 3, st.th).style(r, 4, st.th); sh.merge(r, 2, r, 4); r++;
+      o.criteres.forEach(c => { sh.set(r, 1, c.t, st.td).set(r, 2, c.v || '', st.jauneInC); sh.style(r, 3, st.jauneInC).style(r, 4, st.jauneInC); sh.merge(r, 2, r, 4); sh.height(r, 22); r++; });
+      r++;
+      sh.set(r, 1, 'Conclusion de la période d\'essai', st.question); r++;
+      sh.set(r, 1, o.conclusion || '', st.jauneIn); sh.style(r, 2, st.jauneIn).style(r, 3, st.jauneIn).style(r, 4, st.jauneIn); sh.merge(r, 1, r, 4); sh.height(r, 36); r += 2;
+    }
+    sh.set(r, 1, 'Commentaires', st.question); r++;
+    sh.set(r, 1, o.commentaire || '', st.jauneIn); sh.style(r, 2, st.jauneIn).style(r, 3, st.jauneIn).style(r, 4, st.jauneIn); sh.merge(r, 1, r, 4); sh.height(r, 60); r += 2;
+    sh.set(r, 1, 'Signature du formateur', st.td).set(r, 2, 'Signature de l\'employé', st.td); sh.style(r, 3, st.td).style(r, 4, st.td); sh.merge(r, 2, r, 4); sh.height(r, 60);
+    return sh;
+  }
+  return { grille, blocs, suivi, st };
+})();
+if(typeof module !== 'undefined') module.exports = XLG;
+
+// ---- Style "Sheet Formation" : en-têtes bleu nuit, groupes colorés, lignes zébrées, dates colorées ----
+XLG.tableaux = function(o){
+  const F = 'Calibri', NAVY = '1E2A3F', GROUPES = [NAVY];
+  const sh = XL.Sheet(o.nomFeuille || 'Export');
+  let r = 0, maxLen = [];
+  const jour = new Date(); jour.setHours(0, 0, 0, 0);
+  const serial = d => Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(1899, 11, 30)) / 864e5);
+  if(o.titre){ sh.set(r, 0, o.titre, { b: 1, sz: 15, font: F }); sh.height(r, 28); r += 2; }
+  o.tables.forEach(t => {
+    const nbE = t.nbEntete || 1, L = t.lignes, larg = Math.max.apply(null, L.map(l => l.length));
+    if(t.titre){ sh.set(r, 0, t.titre, { b: 1, sz: 12, font: F, color: NAVY }); sh.height(r, 22); r++; }
+    // en-tête : toutes les lignes d'en-tête fusionnées en un texte, groupe = texte de la 1re ligne propagé
+    const tete = [], gfill = [];
+    for(let c = 0; c < larg; c++){
+      const parts = []; for(let k = 0; k < nbE; k++){ let v = (L[k][c] || ''); if(k === 0 && !v && c > 0 && nbE > 1) v = tete.length ? (gfill[c - 1] || '') : ''; if(k === 0) gfill[c] = v; if(v && parts[parts.length - 1] !== v) parts.push(v); }
+      tete.push(parts.join('\n'));
+    }
+    let grp = 0, gprev = null; const gcol = [];
+    for(let c = 0; c < larg; c++){
+      const g = nbE > 1 ? (L[0][c] || gprev) : null;
+      if(c > 0 && nbE > 1 && g !== gprev) grp++;
+      gprev = g; gcol.push(nbE > 1 && c > 0 ? GROUPES[grp % GROUPES.length] : NAVY);
+    }
+    // si pas de groupes (1 seule ligne d'en-tête) : tout en bleu nuit
+    if(t.couleurs) t.couleurs.forEach((x, c) => { if(x) gcol[c] = x; });
+    const hHead = 20 + 14 * Math.max.apply(null, tete.map(x => x.split('\n').reduce((a, p) => a + Math.max(1, Math.ceil(p.length / 14)), 0)));
+    tete.forEach((h, c) => { sh.set(r, c, h, { b: 1, sz: 11, font: F, color: 'FFFFFF', fill: (nbE > 1 || t.couleurs) ? gcol[c] : NAVY, h: 'center', v: 'center', wrap: 1, border: 1, bcolor: 'FFFFFF' }); maxLen[c] = Math.max(maxLen[c] || 8, Math.min(18, Math.max.apply(null, h.split('\n').map(p => p.length)))); });
+    sh.height(r, Math.min(hHead, 90));
+    if(t.figer !== false) sh.freezeRows(r + 1);
+    const r0 = r + 1; r++;
+    L.slice(nbE).forEach((l, i) => {
+      const zebre = i % 2 === 1 ? 'F3F3F3' : 'FFFFFF';
+      for(let c = 0; c < larg; c++){
+        const ov = (l[c] && typeof l[c] === 'object') ? l[c] : null;
+        const raw = ov ? String(ov.t == null ? '' : ov.t) : (l[c] === undefined || l[c] === null ? '' : String(l[c]));
+        const h = tete[c] || '';
+        let v = raw, s = { sz: 11, font: F, fill: zebre, border: 1, bcolor: 'D9D9D9', v: 'center' };
+        const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if(c === 0){ s.b = 1; s.wrap = 1; }
+        else if(m){
+          const d = new Date(+m[3], +m[2] - 1, +m[1]); v = serial(d); s.nf = 'dd/mm/yyyy'; s.h = 'right';
+          if(/avant|échéance|echeance|prochain/i.test(h)){
+            const diff = Math.round((d - jour) / 864e5);
+            if(diff < 0){ s.fill = 'FBE5E5'; s.color = 'C00000'; s.b = 1; }
+            else if(diff <= 60){ s.fill = 'FFF2DC'; s.color = 'B7791F'; s.b = 1; }
+            else { s.fill = 'E8F1E8'; s.color = '2E7D32'; }
+          }
+        }
+        else if(/^-?\d+([.,]\d+)?$/.test(raw) && raw.length < 12){ v = parseFloat(raw.replace(',', '.')); s.h = 'right'; }
+        else if(/^-?\d+([.,]\d+)?\s?%$/.test(raw)){ v = parseFloat(raw.replace(',', '.')) / 100; s.nf = '0%'; s.h = 'center'; s.b = 1; s.fill = v >= 0.8 ? 'C6EFCE' : (v >= 0.5 ? 'FFEB9C' : 'FFC7CE'); }
+        else if(raw === 'F' || raw === 'OUI' || raw === 'Oui'){ s.fill = 'E2EFDA'; s.color = '2E7D32'; s.h = 'center'; s.b = 1; }
+        else if(raw === 'NON' || raw === 'Non'){ s.fill = 'FBE5E5'; s.color = 'C00000'; s.h = 'center'; }
+        else { s.wrap = 1; if(raw.length <= 12) s.h = 'center'; }
+        if(ov){ ['fill','color','b','h'].forEach(k => { if(ov[k] !== undefined) s[k] = ov[k]; }); if(ov.f) v = { f: ov.f, v: ov.v === undefined ? v : ov.v }; }
+        if(t.formulesLigne && (c === t.formulesLigne.scoreCol || c === t.formulesLigne.pctCol)){
+          const F2 = t.formulesLigne, R = r + 1, rg = XL.col(F2.c0) + R + ':' + XL.col(F2.c1) + R;
+          const n = l.slice(F2.c0, F2.c1 + 1).filter(x => x === F2.marque).length, tot = F2.c1 - F2.c0 + 1;
+          if(c === F2.scoreCol){ v = { f: 'COUNTIF(' + rg + ',"' + F2.marque + '")', v: n }; s.h = 'center'; s.b = 1; }
+          else { v = { f: XL.col(F2.scoreCol) + R + '/' + tot, v: n / tot }; s.nf = '0.0%'; s.h = 'center'; s.b = 1; s.fill = n / tot >= 0.8 ? 'C6EFCE' : (n / tot >= 0.5 ? 'FFEB9C' : 'FFC7CE'); }
+        }
+        sh.set(r, c, v, s);
+        maxLen[c] = Math.max(maxLen[c] || 8, Math.min(c === 0 ? 34 : 45, raw.length));
+      }
+      sh.height(r, 22); r++;
+    });
+    if(t.totaux){
+      const T2 = t.totaux, a = r0 + 1, z = r, nb = L.length - nbE;
+      const lab = { b: 1, sz: 11, font: F, fill: 'D9E1F2', border: 1, bcolor: 'BFBFBF', v: 'center' };
+      sh.set(r, 0, 'Équipiers formés', lab); sh.set(r + 1, 0, 'Taux de maîtrise', lab);
+      for(let c = 1; c < larg; c++){ sh.style(r, c, lab); sh.style(r + 1, c, lab); }
+      for(let c = T2.c0; c <= T2.c1; c++){
+        const n = L.slice(nbE).filter(l => l[c] === T2.marque).length, col = XL.col(c);
+        sh.set(r, c, { f: 'COUNTIF(' + col + a + ':' + col + z + ',"' + T2.marque + '")', v: n }, Object.assign({}, lab, { h: 'center' }));
+        const tx = nb ? n / nb : 0;
+        sh.set(r + 1, c, { f: 'IFERROR(' + col + (r + 1) + '/' + nb + ',0)', v: tx }, Object.assign({}, lab, { h: 'center', nf: '0%', fill: tx >= 0.8 ? 'C6EFCE' : (tx >= 0.5 ? 'FFEB9C' : 'FFC7CE') }));
+      }
+      sh.height(r, 22); sh.height(r + 1, 22); r += 2;
+    }
+    r++;
+  });
+  maxLen.forEach((n, c) => sh.width(c, Math.max(c === 0 ? 24 : 11, n + 3)));
+  return sh;
+};
+
+</script>
+son();
+      if(!data.ok) throw new Error(data.error || 'Connexion refusée');
+      if(rememberGerantChk.checked) setRemembered({ mode: 'gerant', password });
+      else if(getRemembered()) forgetRemembered();
+      authGate.style.display = 'none';
+      loadingState.style.display = 'flex';
+      await afterLogin(data, true, null, password, 'Gérant');
+    } catch(err){
+      authError.textContent = err.message;
+      authError.style.display = 'block';
+    } finally {
+      restoreBtn();
+    }
+  });
+})();
+
+
+
+</script>
+
+
+<script>
+// ---- Export Excel : un bouton par onglet, qui exporte les tableaux affichés ----
+(function(){
+  const ONGLETS = {
+    'formations':'Formations obligatoires', 'polyvalence':'Postes et polyvalence', 'comparaison':'Comparaison'
+  };
+  const nettoie = t => String(t == null ? '' : t).replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  function texteCellule(cell){
+    const out = [];
+    (function parcours(n){
+      if(n.nodeType === 3){ out.push(n.nodeValue); return; }
+      if(n.nodeType !== 1) return;
+      const tag = n.tagName;
+      if(tag === 'BUTTON' || tag === 'SVG' || tag === 'SCRIPT' || tag === 'STYLE' || n.classList.contains('score-bar-mini')) return;
+      if(n.classList.contains('matrix-dot')){ out.push(' ' + (n.classList.contains('on') ? 'OUI' : '') + ' '); return; }
+      if(tag === 'SELECT'){ const o = n.options[n.selectedIndex]; out.push(' ' + (o ? o.text : '') + ' '); return; }
+      if(tag === 'INPUT' || tag === 'TEXTAREA'){
+        if(n.type === 'checkbox') out.push(' ' + (n.checked ? 'OUI' : '') + ' ');
+        else if(n.type !== 'file' && n.type !== 'hidden' && n.type !== 'button') out.push(' ' + n.value + ' ');
+        return;
+      }
+      out.push(' ');
+      n.childNodes.forEach(parcours);
+      out.push(' ');
+    })(cell);
+    return nettoie(out.join(''));
+  }
+  // Aplatit un tableau (colspan / rowspan) en lignes de texte.
+  function tableVersLignes(table){
+    const rows = Array.from(table.rows), grille = [];
+    rows.forEach((tr, r) => {
+      grille[r] = grille[r] || [];
+      let col = 0;
+      Array.from(tr.cells).forEach(cell => {
+        while(grille[r][col] !== undefined) col++;
+        const txt = texteCellule(cell);
+        const cs = Math.max(1, cell.colSpan || 1), rs = Math.max(1, cell.rowSpan || 1);
+        for(let i = 0; i < rs; i++){
+          grille[r + i] = grille[r + i] || [];
+          for(let j = 0; j < cs; j++) grille[r + i][col + j] = (i === 0 && j === 0) ? txt : ((i === 0 || tr.parentElement.tagName === 'THEAD') ? '' : txt);
+        }
+        col += cs;
+      });
+    });
+    const lignes = grille.map(l => Array.from(l, v => v === undefined ? '' : v)).filter(l => l.some(v => v !== ''));
+    const larg = Math.max(0, ...lignes.map(l => l.length));
+    const garde = [];
+    for(let c = 0; c < larg; c++) if(lignes.some(l => (l[c] || '') !== '')) garde.push(c);
+    const out = lignes.map(l => garde.map(c => l[c] || ''));
+    let nbE = 0; for(const tr of rows){ if(tr.cells.length && Array.from(tr.cells).every(c => c.tagName === 'TH')) nbE++; else break; }
+    out.nbEntete = Math.max(1, Math.min(nbE, 3, out.length - 1));
+    return out;
+  }
+  function titreDe(table){
+    let el = table.closest('.matrix-wrap') || table;
+    for(let i = 0; i < 6 && el; i++){
+      let prev = el.previousElementSibling;
+      while(prev){
+        const h = prev.matches('h1,h2,h3,h4') ? prev : prev.querySelector('h1,h2,h3,h4,.panel-title');
+        if(h && nettoie(h.textContent)) return nettoie(h.textContent);
+        prev = prev.previousElementSibling;
+      }
+      el = el.parentElement;
+      if(el && el.tagName === 'SECTION') break;
+    }
+    return '';
+  }
+  const visible = el => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  function exporterOnglet(cle){
+    const section = document.getElementById('tab-' + cle);
+    if(!section) return;
+    const libelle = ONGLETS[cle] || cle;
+    const dd = new Date(), jj = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0');
+    const nom = libelle.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + jj + '.xlsx';
+    const dedie = window.__xlsxDedies && window.__xlsxDedies[cle];
+    if(dedie){
+      const feuilles = dedie();
+      if(!feuilles){ alert('Rien à exporter pour le moment sur cet écran.'); return; }
+      XL.download(feuilles, nom);
+      return;
+    }
+    const tables = Array.from(section.querySelectorAll('table')).filter(t => visible(t) && !t.closest('[style*="display:none"]'));
+    const T = [];
+    const cartes = Array.from(section.querySelectorAll('.stat-card, .kpi-card')).filter(visible).map(c => {
+      const q = sel => { const x = c.querySelector(sel); return x ? nettoie(x.textContent) : ''; };
+      return [q('.stat-label, .kpi-label'), q('.stat-num, .kpi-pct'), q('.kpi-sub')];
+    }).filter(x => x[0] && x[1]);
+    if(cartes.length) T.push({ titre: 'Indicateurs', nbEntete: 1, figer: false, lignes: [['Indicateur', 'Valeur', 'Détail']].concat(cartes) });
+    const barres = Array.from(section.querySelectorAll('.bar-row')).filter(visible).map(b => {
+      const q = sel => { const x = b.querySelector(sel); return x ? nettoie(x.textContent) : ''; };
+      return [q('.bname'), q('.bval')];
+    }).filter(x => x[0]);
+    if(barres.length) T.push({ titre: 'Graphique', nbEntete: 1, figer: false, lignes: [['Libellé', 'Valeur']].concat(barres) });
+    tables.forEach(t => {
+      const lignes = tableVersLignes(t);
+      if(lignes.length < 2) return; // en-tête seul ou simple message : rien à exporter
+      T.push({ titre: titreDe(t), lignes, nbEntete: lignes.nbEntete });
+    });
+    if(!T.length){ alert('Rien à exporter pour le moment sur cet écran.'); return; }
+    const sh = XLG.tableaux({ nomFeuille: libelle.replace(/[:\\\/?*\[\]]/g, ' ').slice(0, 31), titre: libelle + ' — ' + jj.split('-').reverse().join('/'), tables: T });
+    XL.download([sh], nom);
+  }
+  function ajouterBoutons(){
+    Object.keys(ONGLETS).forEach(cle => {
+      const section = document.getElementById('tab-' + cle);
+      if(!section || section.querySelector('.csv-export-bar')) return;
+      const bar = document.createElement('div');
+      bar.className = 'csv-export-bar';
+      bar.style.cssText = 'display:flex;justify-content:flex-end;margin:0 0 8px;';
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'verif-folder-btn';
+      b.textContent = '⬇️ Excel';
+      b.title = 'Télécharge les tableaux affichés sur cet écran, lisibles dans Excel';
+      b.addEventListener('click', () => exporterOnglet(cle));
+      bar.appendChild(b);
+      section.insertBefore(bar, section.firstChild);
+    });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ajouterBoutons); else ajouterBoutons();
+  window.__exporterOngletCsv = exporterOnglet;
+})();
+</script>
+
 
 </body>
 </html>
