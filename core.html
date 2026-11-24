@@ -5717,6 +5717,51 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     </table></div>`;
   }
 
+  // Export Excel du coût de la formation : historique du mois affiché + récapitulatif annuel.
+  (window.__xlsxDedies = window.__xlsxDedies || {})['cout-formation'] = function(){
+    const feuilles = [];
+    const moisKey = coutMonthSelect.value || currentMonthKeyClient();
+    const rows = coutEntriesCache.filter(e => e.date && e.date.slice(0, 7) === moisKey).sort((a, b) => a.date.localeCompare(b.date));
+    const [y, m] = moisKey.split('-');
+    const libMois = MOIS_LABELS_FR[Number(m) - 1].replace(/^./, c => c.toUpperCase()) + ' ' + y;
+    const num = v => (v || v === 0) && Number(v) ? String(Number(v)) : '';
+    if(rows.length){
+      const lignes = [['Date', 'Formateur', 'Équipier', 'Formation', 'Type', 'Temps tablette (min)', 'Temps accompagnement (min)', 'Coût (€)']];
+      rows.forEach(r => lignes.push([frDate(parseDate(r.date)), r.formateur || '', r.equipier || '', r.formation || '',
+        r.typeSession ? (r.typeSession === 'suivi' ? 'Suivi' : 'Initiale') : '', num(r.tempsTablette), num(r.tempsAccompagnement),
+        { t: (Number(r.cout) || 0).toFixed(2), f: undefined, h: 'right' }]));
+      const sh = XLG.tableaux({ nomFeuille: ('Coût ' + libMois).slice(0, 31), titre: 'Coût de la formation — ' + libMois + ' — ' + currentRestaurant, tables: [{ titre: '', lignes, nbEntete: 1 }] });
+      const n = rows.length, tot = rows.reduce((s, r) => s + (Number(r.cout) || 0), 0), st = { b: 1, sz: 11, font: 'Calibri', fill: 'D9E1F2', border: 1, bcolor: 'BFBFBF', v: 'center' };
+      for(let c = 0; c < 7; c++) sh.set(n + 3, c, c === 0 ? 'TOTAL DU MOIS' : '', st);
+      sh.set(n + 3, 7, { f: 'SUM(H4:H' + (n + 3) + ')', v: tot }, Object.assign({}, st, { nf: '#,##0.00 "€"', h: 'right' }));
+      for(let i = 0; i < n; i++) sh.style(i + 3, 7, { nf: '#,##0.00 "€"', h: 'right', sz: 11, font: 'Calibri', border: 1, bcolor: 'D9D9D9', v: 'center', fill: i % 2 ? 'F3F3F3' : 'FFFFFF' });
+      feuilles.push(sh);
+    }
+    const annee = new Date().getFullYear(), prec = annee - 1, tm = { [annee]: {}, [prec]: {} };
+    coutEntriesCache.forEach(e => {
+      if(!e.date) return;
+      const [yy, mm] = e.date.split('-'), yn = Number(yy);
+      if(yn !== annee && yn !== prec) return;
+      tm[yn][mm] = (tm[yn][mm] || 0) + (Number(e.cout) || 0);
+    });
+    const ann = [['Mois', String(prec), String(annee)]];
+    MOIS_LABELS_FR.forEach((lab, i) => {
+      const mm = String(i + 1).padStart(2, '0'), a = tm[prec][mm] || 0, b = tm[annee][mm] || 0;
+      if(a || b) ann.push([lab.replace(/^./, c => c.toUpperCase()), { t: a ? a.toFixed(2) : '0', h: 'right' }, { t: b ? b.toFixed(2) : '0', h: 'right' }]);
+    });
+    if(ann.length > 1){
+      const sh2 = XLG.tableaux({ nomFeuille: 'Récapitulatif annuel', titre: 'Coût de la formation — récapitulatif annuel — ' + currentRestaurant, tables: [{ titre: '', lignes: ann, nbEntete: 1 }] });
+      const n = ann.length - 1, st = { b: 1, sz: 11, font: 'Calibri', fill: 'D9E1F2', border: 1, bcolor: 'BFBFBF', v: 'center' };
+      const tt = [0, 0]; ann.slice(1).forEach(l => { tt[0] += parseFloat(l[1].t); tt[1] += parseFloat(l[2].t); });
+      sh2.set(n + 3, 0, 'COÛT ANNUEL', st);
+      sh2.set(n + 3, 1, { f: 'SUM(B4:B' + (n + 3) + ')', v: tt[0] }, Object.assign({}, st, { nf: '#,##0.00 "€"', h: 'right' }));
+      sh2.set(n + 3, 2, { f: 'SUM(C4:C' + (n + 3) + ')', v: tt[1] }, Object.assign({}, st, { nf: '#,##0.00 "€"', h: 'right' }));
+      for(let i = 0; i < n; i++) for(let c = 1; c < 3; c++) sh2.style(i + 3, c, { nf: '#,##0.00 "€"', h: 'right', sz: 11, font: 'Calibri', border: 1, bcolor: 'D9D9D9', v: 'center', fill: i % 2 ? 'F3F3F3' : 'FFFFFF' });
+      feuilles.push(sh2);
+    }
+    return feuilles.length ? feuilles : null;
+  };
+
   function populateCoutMonthSelect(){
     const moisPresents = new Set(coutEntriesCache.map(e => e.date && e.date.slice(0, 7)).filter(Boolean));
     moisPresents.add(currentMonthKeyClient());
@@ -9342,6 +9387,31 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     ouvrirPageImpression('Planification des formations — ' + monthLabel(mois), currentRestaurant, corps);
   });
 
+  // Export Excel de la planification du mois affiché.
+  (window.__xlsxDedies = window.__xlsxDedies || {}).planification = function(){
+    const mois = currentViewedMonth || document.getElementById('planningMonthSelect').value;
+    const liste = (lastPlanningProposals || []).filter(p => p.statut !== 'Ignoré')
+      .sort((a, b) => a.formateur.localeCompare(b.formateur, 'fr') || displayName(a.equipier).localeCompare(displayName(b.equipier), 'fr'));
+    if(!liste.length) return null;
+    const lignes = [['Formateur', 'Équipier', 'Formation', 'Poste précis', 'Date prévue', 'Statut']];
+    liste.forEach(p => {
+      const ok = p.statut === 'Validé';
+      lignes.push([p.formateur, displayName(p.equipier), p.posteLabel, p.sousPoste || '', p.dateFormation ? frDate(parseDate(p.dateFormation)) : '',
+        ok ? { t: 'Réalisée', fill: 'C6EFCE', color: '2E7D32', b: 1, h: 'center' } : { t: 'En attente', fill: 'FFF2DC', color: 'B7791F', b: 1, h: 'center' }]);
+    });
+    const nbOk = liste.filter(p => p.statut === 'Validé').length;
+    const nom = ('Planning ' + monthLabel(mois)).slice(0, 31);
+    const sh = XLG.tableaux({ nomFeuille: nom, titre: 'Planification des formations — ' + monthLabel(mois) + ' — ' + currentRestaurant, tables: [
+      { titre: '', lignes, nbEntete: 1 }
+    ] });
+    const nb = liste.length;
+    sh.set(nb + 4, 0, 'Total', { b: 1, sz: 11, font: 'Calibri', fill: 'D9E1F2', border: 1, bcolor: 'BFBFBF' });
+    sh.set(nb + 4, 1, { f: 'COUNTA(C4:C' + (nb + 3) + ')', v: nb }, { b: 1, sz: 11, font: 'Calibri', fill: 'D9E1F2', border: 1, bcolor: 'BFBFBF', h: 'center' });
+    sh.set(nb + 4, 2, 'dont réalisées', { b: 1, sz: 11, font: 'Calibri', fill: 'D9E1F2', border: 1, bcolor: 'BFBFBF', h: 'right' });
+    sh.set(nb + 4, 3, { f: 'COUNTIF(F4:F' + (nb + 3) + ',"Réalisée")', v: nbOk }, { b: 1, sz: 11, font: 'Calibri', fill: 'D9E1F2', border: 1, bcolor: 'BFBFBF', h: 'center' });
+    return [sh];
+  };
+
   function populateMonthSelect(months, currentMonth, selected, nextMonth){
     const select = document.getElementById('planningMonthSelect');
     const allMonths = Array.from(new Set([currentMonth, nextMonth, ...months].filter(Boolean))).sort().reverse();
@@ -10257,7 +10327,8 @@ son();
 // ---- Export Excel : un bouton par onglet, qui exporte les tableaux affichés ----
 (function(){
   const ONGLETS = {
-    'formations':'Formations obligatoires', 'polyvalence':'Postes et polyvalence', 'comparaison':'Comparaison'
+    'formations':'Formations obligatoires', 'gestion':'Formations obligatoires EDG', 'polyvalence':'Postes et polyvalence',
+    'planification':'Planification', 'cout-formation':'Coût de la formation'
   };
   const nettoie = t => String(t == null ? '' : t).replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
   function texteCellule(cell){
