@@ -2845,6 +2845,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           'Cherche un équipier avec la <strong>barre de recherche</strong>.',
           'Clique sur une formation précise, ou sur une carte « En retard », « Échéance sous 30 j » ou « À jour », pour filtrer. Le <strong>tri par urgence</strong> apparaît alors.',
           'Les boutons de tri classent la liste par urgence, par prénom ou par date d\'entrée.',
+          '<strong>⬇️ Excel</strong>, dans la ligne des boutons du haut (à côté de « Ajouter une formation »), télécharge le tableau complet : une ligne par personne avec, pour chaque formation, la date « Fait le » et la date « À faire avant le » colorée selon l\'échéance, plus une feuille de synthèse. Il fonctionne de la même façon dans « Équipe de gestion ».',
           'Clique sur la ligne d\'un équipier pour ouvrir <strong>sa fiche</strong> : les dates de ses formations, ses suivis à 4 semaines et à 60 jours, et les fiches à télécharger.',
         ])
         + (accesResponsable ? sub('Gérer les équipiers')
@@ -2870,6 +2871,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           'En haut, le <strong>taux de maîtrise par poste</strong> montre la part des équipiers formés sur chaque poste, du plus fragile au plus solide : tu repères vite où il manque du monde.',
           'Dans la <strong>matrice de polyvalence</strong>, un point = un poste maîtrisé. Clique sur le titre d\'une colonne pour trier, ou cherche un nom pour le retrouver.',
           'Les boutons « Trier par » classent par date d\'entrée, par polyvalence (croissante ou décroissante) ou par prénom.',
+          '<strong>⬇️ Excel</strong> (ligne des boutons du haut) télécharge la matrice complète équipiers × postes, avec le taux de chaque équipier, et une feuille « Taux par poste ».',
         ])
         + (peutEtrePlanifie ? list([
           'Le bouton <strong>📤</strong>, à côté du score de l\'équipier dans la matrice, ouvre « Fiches signées » : envoie une photo ou un PDF de la fiche signée pour chaque poste validé.',
@@ -2886,7 +2888,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
         + list([
           'Choisis le mois avec <strong>« Mois affiché »</strong>.',
           'Indique la <strong>date prévue</strong> sur chaque proposition.',
-          'Le bouton <strong>« 🖨️ Imprimer / PDF »</strong> sort la liste du mois, classée par formateur.',
+          'Le bouton <strong>« 🖨️ Imprimer / PDF »</strong> sort la liste du mois, classée par formateur. À côté, <strong>« ⬇️ Excel »</strong> la télécharge sous forme de tableau.',
         ])
         + (accesResponsable ? sub('Générer et gérer les propositions')
           + steps([
@@ -2919,7 +2921,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           + list([
             '<strong>Historique :</strong> les entrées du mois sont classées par date, quel que soit l\'ordre de saisie. Le Responsable peut corriger (✏️) ou supprimer (🗑️) une entrée.',
             '<strong>Récapitulatif annuel :</strong> les mois de l\'année en cours et de l\'année précédente, côte à côte.',
-            '<strong>🖨️ Imprimer / PDF :</strong> sort l\'historique du mois avec son total.',
+            '<strong>🖨️ Imprimer / PDF :</strong> sort l\'historique du mois avec son total. <strong>⬇️ Excel</strong>, juste à côté, télécharge l\'historique du mois (total calculé) et le récapitulatif annuel.',
             '<strong>Taux horaires :</strong> modifiables par le gérant uniquement.',
             '<strong>« Plus d\'options »</strong> regroupe le 📊 Récapitulatif annuel, les ⚙️ Taux horaires et les 📎 Fiches temps de formation tablette (des PDF de référence ajoutés par le gérant).',
           ])
@@ -2945,7 +2947,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
               'Pour le <strong>suivi à 4 semaines</strong>, <strong>tous les commentaires sont obligatoires</strong> (un par question, plus le commentaire général). S\'il en manque, le suivi ne peut pas être validé : un message d\'erreur indique précisément les champs à compléter.',
               'Clique <strong>Enregistrer</strong> : la date du suivi est <strong>reportée automatiquement</strong> dans « Formations obligatoires » de l\'équipier (colonnes Suivi à 4 semaines / Suivi à 60 jours).',
             ])
-            + tip('Rien n\'est enregistré tant que tu n\'as pas cliqué sur « Enregistrer ».'));
+            + tip('Rien n\'est enregistré tant que tu n\'as pas cliqué sur « Enregistrer ». Dans la fenêtre de la grille, <strong>⬇️ Excel</strong> (à côté de « PDF ») télécharge la grille telle qu\'elle est affichée.'));
 
       // ----- 5 bis. Certification des formateurs -----
       if(accesResponsable) section('certification', '🏅', 'var(--plum)', 'Certification formateurs', 'Le parcours pour devenir formateur certifié',
@@ -3088,6 +3090,7 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
           'Utilise <strong>« En retard »</strong> et <strong>« Échéance sous 30 j »</strong> en haut de la liste pour te concentrer sur l\'urgent.',
           'Suivi intégration opérationnel et Alternant ne gardent que l\'<strong>année en cours et l\'année précédente</strong> : les données plus anciennes sont retirées automatiquement.',
           'Les boutons <strong>🖨️ Imprimer / PDF</strong> ouvrent une page propre : dans la fenêtre d\'impression, choisis « Enregistrer au format PDF ».',
+          'Les boutons <strong>⬇️ Excel</strong> téléchargent le tableau affiché dans un fichier Excel mis en forme (formations obligatoires, équipe de gestion, polyvalence, planification, coût de la formation et grilles de suivi). Les chiffres sont ceux du restaurant choisi.',
           'Un souci, une question ? Adresse-toi à ton Responsable formation ou ton Directeur/Directrice.',
         ]));
 
@@ -5957,8 +5960,8 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
   async function initCoutFormationTab(){
     populateCoutFormationSelect();
     coutDateInput.value = new Date().toISOString().slice(0, 10);
-    await loadCoutFormateurs();
-    await loadCoutFormationData();
+    // Formateurs et historique sont indépendants : on les demande en même temps.
+    await Promise.all([loadCoutFormateurs(), loadCoutFormationData()]);
   }
 
   // ---------------- Suivi intégration opérationnelle ----------------
@@ -7632,13 +7635,15 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     rzWrapProb.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Chargement…</p>';
     rzWrapPoste.innerHTML = '';
     try{
+      // Les deux demandes partent ensemble (au lieu de l'une après l'autre) : l'onglet s'ouvre plus vite.
+      const pGrille = fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody({ sheet:'get_grille_rz', targetRestaurant: currentRestaurant })) }).then(r => r.json()).catch(() => null);
       const res = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody({ sheet:'get_certification_rz', targetRestaurant: currentRestaurant })) });
       const d = await res.json();
       if(!d.ok) throw new Error(d.error || 'Échec du chargement');
       rzRecords = d.records || [];
       try{
-        const g = await (await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody({ sheet:'get_grille_rz', targetRestaurant: currentRestaurant })) })).json();
-        if(g.ok && g.grilles) rzGrilles = { prob: g.grilles.prob || null, poste: g.grilles.poste || null, formateur: g.grilles.formateur || rzGrilles.formateur };
+        const g = await pGrille;
+        if(g && g.ok && g.grilles) rzGrilles = { prob: g.grilles.prob || null, poste: g.grilles.poste || null, formateur: g.grilles.formateur || rzGrilles.formateur };
       } catch(e){ /* ancienne version du serveur : grille d'origine */ }
       renderRz();
     } catch(err){
@@ -8214,9 +8219,10 @@ function initApp(appData, isGerant, fixedRestaurant, sessionPassword, sessionFor
     }
     const paramBlock = document.getElementById('alternantParametrageBlock');
     if(paramBlock) paramBlock.style.display = canManageAlternant ? '' : 'none';
+    const pFormateurs = fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody({ sheet:'get_formateurs_for_integration', targetRestaurant: currentRestaurant })) }).catch(() => null);
     await loadAlternants();
-    const resF = await fetch(APPS_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(authBody({ sheet:'get_formateurs_for_integration', targetRestaurant: currentRestaurant })) });
-    alternantFormateursCache = (await resF.json()).formateurs || [];
+    const resF = await pFormateurs;
+    if(resF) alternantFormateursCache = (await resF.json()).formateurs || [];
   }
 
   const togglePeriodesOpBtn = document.getElementById('togglePeriodesOpBtn');
