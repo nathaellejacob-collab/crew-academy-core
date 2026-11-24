@@ -1366,6 +1366,7 @@
       <button type="button" id="choiceFormationObligatoireBtn" style="display:block; width:100%; text-align:left; padding:10px 14px; border:none; background:#fff; font-size:13px; cursor:pointer; border-top:1px solid var(--line);">📋 Formation obligatoire</button>
     </div>
   </div>
+  <button type="button" id="xlBarBtn" style="display:none;" title="Télécharge les tableaux de cet onglet au format Excel">⬇️ Excel</button>
 </div>
 
 <div class="stats-wrap" id="statsWrap">
@@ -10428,6 +10429,19 @@ son();
   }
   const PDF_BTN = { 'planification':'imprimerPlanningBtn', 'cout-formation':'imprimerCoutBtn' };
   function ajouterBoutons(){
+    const barBtn = document.getElementById('xlBarBtn');
+    if(barBtn){
+      const majBarBtn = () => {
+        const act = document.querySelector('.tab-btn.active');
+        const cle = act && act.dataset.tab;
+        const ok = !!cle && !!ONGLETS[cle] && !PDF_BTN[cle];
+        barBtn.style.display = ok ? '' : 'none';
+        barBtn.dataset.cle = ok ? cle : '';
+      };
+      barBtn.addEventListener('click', () => { if(barBtn.dataset.cle) exporterOnglet(barBtn.dataset.cle); });
+      document.addEventListener('click', () => setTimeout(majBarBtn, 0), true);
+      majBarBtn(); setTimeout(majBarBtn, 800); setTimeout(majBarBtn, 2500);
+    }
     Object.keys(ONGLETS).forEach(cle => {
       const section = document.getElementById('tab-' + cle);
       if(!section || section.querySelector('.csv-export-bar') || section.querySelector('.xl-btn-pdf')) return;
@@ -10441,6 +10455,7 @@ son();
         pdfBtn.insertAdjacentElement('afterend', bx);
         return;
       }
+      if(barBtn) return;
       const bar = document.createElement('div');
       bar.className = 'csv-export-bar';
       bar.style.cssText = 'display:flex;justify-content:flex-end;margin:0 0 8px;';
