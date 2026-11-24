@@ -10426,10 +10426,21 @@ son();
     const sh = XLG.tableaux({ nomFeuille: libelle.replace(/[:\\\/?*\[\]]/g, ' ').slice(0, 31), titre: libelle + ' — ' + jj.split('-').reverse().join('/'), tables: T });
     XL.download([sh], nom);
   }
+  const PDF_BTN = { 'planification':'imprimerPlanningBtn', 'cout-formation':'imprimerCoutBtn' };
   function ajouterBoutons(){
     Object.keys(ONGLETS).forEach(cle => {
       const section = document.getElementById('tab-' + cle);
-      if(!section || section.querySelector('.csv-export-bar')) return;
+      if(!section || section.querySelector('.csv-export-bar') || section.querySelector('.xl-btn-pdf')) return;
+      const pdfBtn = PDF_BTN[cle] && document.getElementById(PDF_BTN[cle]);
+      if(pdfBtn){
+        const bx = document.createElement('button');
+        bx.type = 'button'; bx.className = 'verif-folder-btn xl-btn-pdf';
+        bx.textContent = '⬇️ Excel';
+        bx.title = 'Télécharge cet écran au format Excel';
+        bx.addEventListener('click', () => exporterOnglet(cle));
+        pdfBtn.insertAdjacentElement('afterend', bx);
+        return;
+      }
       const bar = document.createElement('div');
       bar.className = 'csv-export-bar';
       bar.style.cssText = 'display:flex;justify-content:flex-end;margin:0 0 8px;';
